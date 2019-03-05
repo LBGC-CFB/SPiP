@@ -44,7 +44,11 @@ helpMessage="Usage: SPiPv0.2.r\n
    You could : Rscript SPiPv0.2.r -I ./testCrypt.txt -O ./outTestCrypt.txt"
 
 #get script argument
-args <- commandArgs(trailingOnly = TRUE)
+argsFull <- commandArgs()
+
+scriptPath=dirname(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=="--file="])))
+
+args = argsFull[(which(argsFull=="--args")+1):length(argsFull)]
 
 if (length(args)<2){message(helpMessage);stop()}
 
@@ -104,11 +108,9 @@ message(paste(names(useOption),collapse="\t"))
 message(paste(useOption,collapse="\t"))
 
 #Get Ref files
-wd_R=getwd()
-inputref = paste(wd_R, "/RefFiles",sep="")
-
-load(paste(wd_R, "/RefFiles/RefFiles.RData",sep=""))
-load(paste(wd_R, "/RefFiles/dataRefSeq",genome,".RData",sep=""))
+inputref = paste(scriptPath, "/RefFiles",sep="")
+load(paste(inputref, "/dataRefSeq",genome,".RData",sep=""))
+load(paste(inputref, "/RefFiles.RData",sep=""))
 
 dataRefSeq = dataRefSeq[-grep("_",dataRefSeq$V1),]
 
@@ -1553,7 +1555,7 @@ getGlobaInterpretation <- function(SPiCEinterpret, RegType, deltaMES, mutInPBare
 		}
 	}
 	if (length(grep("Exon",RegType ))>0 & abs(distSS)<120){
-		if(deltaESR<(-1.25)) {
+		if(deltaESR<(-1.10)) {
 			interpretFinal = c(interpretFinal,"Alter ESR")
 		}else{
 			interpretFinal = c(interpretFinal,"NTR ESR")

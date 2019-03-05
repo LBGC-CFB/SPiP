@@ -57,6 +57,6 @@ you can get the different argument of SPiP by `Rscript /path/to/SPiPv0.2.r --hel
 An example of SPiP run with test file [testCrypt.txt](http://gitlab.baclesse.fr/LEMRAP/spip/blob/master/testCrypt.txt "tittle"):
 
     cd /path/to/spip/
-    Rscript ./SPiPv0.2.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/fastaGenome
+    Rscript ./SPiPv0.2.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
 
 In this example SPiP will generate a text file "outputTest.txt" where the predictions will be save.
