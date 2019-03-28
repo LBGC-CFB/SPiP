@@ -5,42 +5,46 @@ library(RCurl)
 	error=function(cond) {
 		message("Here's the original error message:")
 		message(cond)
-		message("*****You need to install \'RCurl\' library")
+		message("*****You need to install \'RCurl\' library\nInstall it by: install.pakages(\'RCurl\'")
+})
+tryCatch({
+library(parallel)
+},
+	error=function(cond) {
+		message("Here's the original error message:")
+		message(cond)
+		message("*****You need to install \'parallel\' library\nInstall it by: install.pakages(\'parallel\')")
 })
 
 myOpts <- curlOptions(connecttimeout = 10)
+options(scipen=50)
 useOption = rep("Yes",5)
-names(useOption) = c("SPiCE","MES","BP","Cryptic","ESR")
+names(useOption) = c("SPiCE","MES","BPP","Scan Cryptic","ESR")
 samPath=NULL
 fastaFile=NULL
+threads = 1
 genome="hg19"
+maxLines = 1000
 #SPiP arguments
 
 helpMessage="Usage: SPiPv0.2.r\n
-    [Mandatory] \n
-        \t[-I|--input /path/to/inputFile] \n
-        \t\tlist of variants file (.txt or .vcf)\n
-        \t[-O|--output /path/to/outputFile] \n
-        \t\tName of ouput file (.txt)\n
-    [Options] \n
-        \t[-g|--GenomeAssenbly hg19] \n
-        \t\tGenome assembly version (hg19 or hg38) [default= hg19]\n
-        \t[-s|--SamPath /path/to/samtools] \n
-        \t\tPath to samtools, if you want to use Ensembl api keep this argument empty\n
-        \t[-f|--fastaGenome /path/to/fastaGenome] \n
-        \t\tfasta file of genome used by samtools\n
-        \t[-c|--SPiCE]\n
-        \t\tUse of consensus prediction (SPiCE) (Yes/No) [default= Yes]\n
-        \t[-m|--MES]\n
-        \t\tUse of MES prediction in {-20; -13} (Yes/No) [default= Yes]\n
-        \t[-b|--BPP]\n
-        \t\tUse of Branch point prediction (Yes/No) [default= Yes]\n
-        \t[-d|--Cryptic]\n
-        \t\tUse of de Novo/cryptic prediction (Yes/No) [default= Yes]\n
-        \t[-e|--ESR]\n
-        \t\tUse of ESR prediction (Yes/No) [default= Yes]\n
-        \t[-h|--help]\n
-        \t\tprint this help message and exit\n
+    Mandatory \n
+        -I, --input /path/to/inputFile\t\tlist of variants file (.txt or .vcf)
+        -O, --output /path/to/outputFile\t\tName of ouput file (.txt)\n
+    Genome options \n
+        -g, --GenomeAssenbly hg19\t\tGenome assembly version (hg19 or hg38) [default= hg19]
+        -s, --SamPath /path/to/samtools]\t\tPath to samtools, if you want to use Ensembl api keep this argument empty
+        -f, --fastaGenome /path/to/fastaGenome\t\tfasta file of genome used by samtools\n
+    Parallel options \n
+        -t, --threads N\t\tNumber of threads used for the calculation [default= 1]
+        -l, --maxLines N\t\tNumber of lines read in each time [default= 1000]\n
+    Tools options \n
+        -c, --SPiCE Yes\t\tUse of consensus prediction (SPiCE) (Yes/No) [default= Yes]
+        -m, --MES Yes\t\tUse of MES prediction in {-20; -13} (Yes/No) [default= Yes]
+        -b, --BPP Yes\t\tUse of Branch point prediction (Yes/No) [default= Yes]
+        -d, --Cryptic Yes\t\tUse of de Novo/cryptic prediction (Yes/No) [default= Yes]
+        -e, --ESR Yes\t\tUse of ESR prediction (Yes/No) [default= Yes]\n
+    -h, --help\t\tPrint this help message and exit\n
    You could : Rscript SPiPv0.2.r -I ./testCrypt.txt -O ./outTestCrypt.txt"
 
 #get script argument
@@ -50,7 +54,7 @@ scriptPath=dirname(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=
 
 args = argsFull[(which(argsFull=="--args")+1):length(argsFull)]
 
-if (length(args)<2){message(helpMessage);stop()}
+if (length(args)<4){message(helpMessage);stop()}
 
 i=1
 while (i < length(args)){
@@ -64,6 +68,10 @@ while (i < length(args)){
         samPath=args[i+1];i = i+2
     }else if(args[i]=="-f"|args[i]=="--fastaGenome"){
         fastaFile=args[i+1];i = i+2
+    }else if(args[i]=="-t"|args[i]=="--threads"){
+        threads= as.numeric(args[i+1]);i = i+2
+    }else if(args[i]=="-l"|args[i]=="--maxLines"){
+        maxLines=as.numeric(args[i+1]);i = i+2
     }else if(args[i]=="-c"|args[i]=="--SPiCE"){
         useOption["SPiCE"]=args[i+1];i = i+2
     }else if(args[i]=="-m"|args[i]=="--MES"){
@@ -103,7 +111,20 @@ if(is.null(samPath)){
 	}
 }
 
-message('Your options are:')
+message("##################")
+message("#Your options:")
+message("##################")
+message(paste("Input File:",normalizePath(inputFile)))
+message(paste("Output File:",outputFile))
+message(paste("Genome assembly:",genome))
+message(paste("Request method for sequences: , by",if(is.null(samPath)){"Ensembl API"}else{"Samtools"}))
+if(!is.null(samPath)){
+    message(paste("Samtools:", normalizePath(samPath)))
+    message(paste("Fasta genome:", normalizePath(fastaFile)))
+}
+message(paste("Nb threads:",threads))
+message(paste("Nb max lines read in each time:",maxLines))
+message('SPiP will use the tools:')
 message(paste(names(useOption),collapse="\t"))
 message(paste(useOption,collapse="\t"))
 
@@ -159,144 +180,6 @@ names(me2x5) <- as.character(ME2x5$V1.1)
 
 inverseDic <- data.frame(V1 = c('T','G','C','A','N'),row.names = c('A','C','G','T','N'))
 inverseDic$V1 <- as.character(inverseDic$V1)
-
-#import data
-
-getTranscriptFromVCF <- function(chrom, pos){
-	if(substr(as.character(chrom),1,3)!="chr"){
-		chrom = paste("chr",chrom,sep="")
-	}
-	transcript = as.character(dataRefSeq[dataRefSeq$V1==chrom & dataRefSeq$V2<=pos & dataRefSeq$V3>=pos,'V4'])
-	if(length(transcript)==0){
-		transcript = "no transcript"
-		return(transcript)
-	}else{
-		return(transcript)
-	}
-}
-
-getMutationFromVCF <- function (REF, ALT){
-	if(as.numeric(regexpr(',',ALT,fixed =TRUE))<0){
-		if(REF=='.'){
-			mut = paste('ins',ALT,sep="")
-		}else if(ALT=='.'){
-			mut = 'del'
-		}else{
-			if(nchar(REF)>1 | nchar(ALT)>1){
-				mut = paste('delins',ALT,sep="")
-			}else{
-				mut = paste(REF,ALT,sep=">")
-			}
-		}
-	}else{
-		ALT = unlist(strsplit(ALT,',',fixed = TRUE))
-		mut=NULL
-		for (i in 1:length(ALT)){
-			if(REF=='.'){
-				mut[i] = paste('ins',ALT[i],sep="")
-			}else if(ALT[i]=='.'){
-				mut[i] = 'del'
-			}else{
-				if(nchar(REF)>1 | nchar(ALT[i])>1){
-					mut[i] = paste('delins',ALT[i],sep="")
-				}else{
-					mut[i] = paste(REF,ALT[i],sep=">")
-				}
-			}
-		}
-	}
-	return(mut)
-}
-
-getPositionFromVCF <- function(POS, REF){
-	if(nchar(REF)>1){
-		start= POS
-		end = POS+(nchar(REF)-1)
-		pos = paste('g.',paste(start,end,sep='_'),sep="")
-	}else{
-		pos = paste('g.',POS,sep="")
-	}
-	return(pos)
-}
-
-getVariantFromVCF <- function(transcript,position,mutation){
-	transPos = paste(unlist(transcript),unlist(position),sep=":")
-	mutation = unlist(mutation)
-	transPosAdj = rep(transPos,length(mutation))
-	variant = paste(transPosAdj,rep(mutation,each = length(transPos)),sep=":")
-	return(variant)
-}
-
-readVCF <- function(dataLine){
-	dataLine = unlist(strsplit(dataLine,split='\t')) #c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO")
-	transcript = getTranscriptFromVCF(dataLine[1],as.numeric(dataLine[2]))
-	position = getPositionFromVCF(as.numeric(dataLine[2]),dataLine[4])
-	mutation =getMutationFromVCF(dataLine[4],dataLine[5])
-	variant = getVariantFromVCF(transcript,position,mutation)
-	result <<- list(variant)
-}
-
-fileFormat = tolower(substr(basename(inputFile),nchar(basename(inputFile))-2,nchar(basename(inputFile))))
-
-if(fileFormat=="txt"){
-	data = read.table(inputFile,sep="\t",header=T)
-	if(is.null(data$varID)){
-		message("###########################")
-		message("#Your data doesn't have the varID column")
-		message("###########################")
-		print_help(opt_parser)
-		stop()
-	}
-}else if(fileFormat=="vcf"){
-	data=NULL
-	VCF =readLines(inputFile)
-	VCF = VCF[-grep("#",VCF,fixed=TRUE)]
-	tmp = mapply(readVCF,VCF)
-	data$varID = as.character(unlist(tmp))
-	data$annot = gsub('\t',' ',names(unlist(tmp)),fixed=TRUE)
-	data= as.data.frame(data)
-	if (length(data[grep('no transcript',data[,'varID']),'varID'])>0){
-		message(paste( "I find no transcrit for the mutation:",paste(data[grep('no transcript',data[,'varID']),'varID'],collapse=", ")))
-		data = data[-grep('no transcript',data[,'varID']),]
-	}
-}else{
-	message("###########################")
-	message("#Incorrect format of input, please try again with a txt or vcf file")
-	message("###########################")
-	print_help(opt_parser)
-	stop()
-}
-
-data$Interpretation <- NA
-data$InterConfident <- NA
-data$chr <- NA
-data$strand <- NA
-data$gNomen <- NA
-data$seqPhysio <- NA
-data$seqMutated <- NA
-data$NearestSS <- NA
-data$distSS <- NA
-data$RegType <- NA
-data$SPiCEproba <- NA
-data$SPiCEinter_2thr <- NA
-data$deltaMES <- NA
-data$mutInPBarea <- NA
-data$deltaESRscore <- NA
-data$posCryptMut <- NA
-data$sstypeCryptMut <- NA
-data$nearestSStoCrypt <- NA
-data$nearestPosSStoCrypt <- NA
-data$nearestDistSStoCrypt <- NA
-data$probaCryptMut <- NA
-data$classProbaCryptMut <- NA
-data$posCryptWT <- NA
-data$probaCryptWT <- NA
-data$classProbaCryptWT <- NA
-data$posSSPhysio <- NA
-data$probaSSPhysio <- NA
-data$classProbaSSPhysio <- NA
-data$probaSSPhysioMut <- NA
-data$classProbaSSPhysioMut <- NA
 
 #functions used in this pipeline
 
@@ -730,13 +613,9 @@ convertcNomenIngNomen <- function(transcrit,posVar){
 }
 
 getRevSeq <- function(sequence){
-	lenSeq = nchar(sequence)
-	seqRev = paste(rep("N",lenSeq),collapse="")
-
-	for(i in 1:lenSeq){
-		substr(seqRev,i,i) = inverseDic[substr(sequence,lenSeq-i+1,lenSeq-i+1),1]
-	}
-	return(seqRev)
+    splitRevSeq = rev(unlist(strsplit(sequence,'|')))
+    seqRev = paste(unlist(lapply(list(splitRevSeq),function(x) inverseDic[x,1])),sep="",collapse="")
+    return(seqRev)
 }
 
 getSeqFromSamtools <- function(chromosome,start,end,strand,command,fastaRef){
@@ -1017,7 +896,7 @@ getESRscore <- function(sstype,seq){
 	}else{
 		ESRscoreFinal = mean(ESRscore)
 	}
-return(ESRscoreFinal)
+    return(ESRscoreFinal)
 }
 
 getScore <- function(sstype,seq,seqCon){
@@ -1132,56 +1011,58 @@ getSplitTableSeq <- function(varName, chr, varPos, sens, seqPhysio, seqMutated, 
 					seqType = c(rep("WT",length(c(PosAccPhy,PosDonPhy))),rep("Mut",length(c(PosAccMut,PosDonMut)))),
 					sstype = c(rep("Acc",length(PosAccPhy)),rep("Don",length(PosDonPhy)),rep("Acc",length(PosAccMut)),rep("Don",length(PosDonMut)))
 					)
-	tmpTableSeq$seqCons = as.character(tmpTableSeq$seqCons)
-	tmpTableSeq$seqExon = as.character(tmpTableSeq$seqExon)
-	tmpTableSeq$Physio = "No"
-	tmpTableSeq$Physio[which(tmpTableSeq$pos%in%posAcc & tmpTableSeq$sstype=="Acc")] = "Yes"
-	tmpTableSeq$Physio[which(tmpTableSeq$pos%in%posDon & tmpTableSeq$sstype=="Don")] = "Yes"
-	if(nrow(tmpTableSeq[tmpTableSeq$Physio=="Yes" & tmpTableSeq$seqType=="WT",])==1){
-		SSphy = tmpTableSeq$sstype[tmpTableSeq$Physio=="Yes" & tmpTableSeq$seqType=="WT"]
-		tmpTableSeq = tmpTableSeq[tmpTableSeq$sstype==SSphy,]
-	}
+    if(nrow(tmpTableSeq)>0){
+    	tmpTableSeq$seqCons = as.character(tmpTableSeq$seqCons)
+    	tmpTableSeq$seqExon = as.character(tmpTableSeq$seqExon)
+    	tmpTableSeq$Physio = "No"
+    	tmpTableSeq$Physio[which(tmpTableSeq$pos%in%posAcc & tmpTableSeq$sstype=="Acc")] = "Yes"
+    	tmpTableSeq$Physio[which(tmpTableSeq$pos%in%posDon & tmpTableSeq$sstype=="Don")] = "Yes"
+    	if(nrow(tmpTableSeq[tmpTableSeq$Physio=="Yes" & tmpTableSeq$seqType=="WT",])==1){
+    		SSphy = tmpTableSeq$sstype[tmpTableSeq$Physio=="Yes" & tmpTableSeq$seqType=="WT"]
+    		tmpTableSeq = tmpTableSeq[tmpTableSeq$sstype==SSphy,]
+    	}
 
-	if(length(nearestPosAll)==2){
-		if(length(which(tmpTableSeq$sstype=="Don"))>0){
-			if(length(which(tmpTableSeq$pos==nearestPosAll[1] & tmpTableSeq$sstype=="Don"))==0){
-				getSeqToStudyWTDon(chr, sens, posDonPhy = nearestPosAll[1])
-				tmpTableSeq = rbind(tmpTableSeq,c(varName,chr,NA,nearestPosAll[1],as.character(seqConsDonPhyNew),as.character(seqExonDonPhyNew),"WT","Don","Yes"))
-			}
-		}
-		if(length(which(tmpTableSeq$sstype=="Acc"))>0){
-			if(length(which(tmpTableSeq$pos==nearestPosAll[2] & tmpTableSeq$sstype=="Acc"))==0){
-				getSeqToStudyWTAcc(chr, sens, posAccPhy = nearestPosAll[2])
-				tmpTableSeq = rbind(tmpTableSeq,c(varName[1],chr[1],NA,nearestPosAll[2],as.character(seqConsAccPhyNew),as.character(seqExonAccPhyNew),"WT","Acc","Yes"))
-			}
-		}
-	}
-	if(nrow(tmpTableSeq[tmpTableSeq$Physio=="Yes",])!=0){
-		tmpTableSeq = tmpTableSeq[!(tmpTableSeq$pos%in%tmpTableSeq$pos[tmpTableSeq$Physio=="Yes"] & tmpTableSeq$Physio!="Yes"),]
-	}
-	tmpScore = mapply(getScore, tmpTableSeq$sstype, as.character(tmpTableSeq$seqExon), as.character(tmpTableSeq$seqCons))
+    	if(length(nearestPosAll)==2){
+    		if(length(which(tmpTableSeq$sstype=="Don"))>0){
+    			if(length(which(tmpTableSeq$pos==nearestPosAll[1] & tmpTableSeq$sstype=="Don"))==0){
+    				getSeqToStudyWTDon(chr, sens, posDonPhy = nearestPosAll[1])
+    				tmpTableSeq = rbind(tmpTableSeq,c(varName,chr,NA,nearestPosAll[1],as.character(seqConsDonPhyNew),as.character(seqExonDonPhyNew),"WT","Don","Yes"))
+    			}
+    		}
+    		if(length(which(tmpTableSeq$sstype=="Acc"))>0){
+    			if(length(which(tmpTableSeq$pos==nearestPosAll[2] & tmpTableSeq$sstype=="Acc"))==0){
+    				getSeqToStudyWTAcc(chr, sens, posAccPhy = nearestPosAll[2])
+    				tmpTableSeq = rbind(tmpTableSeq,c(varName[1],chr[1],NA,nearestPosAll[2],as.character(seqConsAccPhyNew),as.character(seqExonAccPhyNew),"WT","Acc","Yes"))
+    			}
+    		}
+    	}
+    	if(nrow(tmpTableSeq[tmpTableSeq$Physio=="Yes",])!=0){
+    		tmpTableSeq = tmpTableSeq[!(tmpTableSeq$pos%in%tmpTableSeq$pos[tmpTableSeq$Physio=="Yes"] & tmpTableSeq$Physio!="Yes"),]
+    	}
+    	tmpScore = mapply(getScore, tmpTableSeq$sstype, as.character(tmpTableSeq$seqExon), as.character(tmpTableSeq$seqCons))
 
-	tmpTableSeq$MES = unlist(tmpScore[1,])
-	tmpTableSeq$SSF = unlist(tmpScore[2,])
-	tmpTableSeq$ESR = unlist(tmpScore[3,])
+    	tmpTableSeq$MES = unlist(tmpScore[1,])
+    	tmpTableSeq$SSF = unlist(tmpScore[2,])
+    	tmpTableSeq$ESR = unlist(tmpScore[3,])
 
-	tmpProba = mapply(getProbaModel, tmpTableSeq$sstype, tmpTableSeq$MES, tmpTableSeq$SSF , tmpTableSeq$ESR)
-	tmpTableSeq$proba = as.numeric(unlist(tmpProba))
-	tmpTableSeq$proba[tmpTableSeq$proba<0]=0
-	tmpTableSeq$proba[tmpTableSeq$proba>1]=1
+    	tmpProba = mapply(getProbaModel, tmpTableSeq$sstype, tmpTableSeq$MES, tmpTableSeq$SSF , tmpTableSeq$ESR)
+    	tmpTableSeq$proba = as.numeric(unlist(tmpProba))
+    	tmpTableSeq$proba[tmpTableSeq$proba<0]=0
+    	tmpTableSeq$proba[tmpTableSeq$proba>1]=1
 
-	tmpTableSeq$classProba = "No"
-	tmpTableSeq$classProba[tmpTableSeq$proba >= 0.00388264838136624] = "Yes"
-	tmp = merge(tmpTableSeq[tmpTableSeq$seqType=="WT",c("sstype","pos","proba","Physio")],tmpTableSeq[tmpTableSeq$seqType=="Mut",c("sstype","pos","proba","Physio")],
-					by.x = c("sstype","pos"),by.y = c("sstype","pos"),all.x=F,all.y=T)
-	tmp$proba.x[is.na(tmp$proba.x)]=0
-	tmp$Physio.x[is.na(tmp$Physio.x)] = "No"
+    	tmpTableSeq$classProba = "No"
+    	tmpTableSeq$classProba[tmpTableSeq$proba >= 0.00388264838136624] = "Yes"
+    	tmp = merge(tmpTableSeq[tmpTableSeq$seqType=="WT",c("sstype","pos","proba","Physio")],tmpTableSeq[tmpTableSeq$seqType=="Mut",c("sstype","pos","proba","Physio")],
+    					by.x = c("sstype","pos"),by.y = c("sstype","pos"),all.x=F,all.y=T)
+    	tmp$proba.x[is.na(tmp$proba.x)]=0
+    	tmp$Physio.x[is.na(tmp$Physio.x)] = "No"
 
-	tmp = tmp[order(tmp$proba.y,decreasing=T),]
-	tmp = tmp[!duplicated(tmp$pos),]
-	if(length(which(tmpTableSeq$seqType=="Mut" & tmpTableSeq$pos%in%tmp$pos[tmp$proba.x>=tmp$proba.y & tmp$Physio.x!="Yes"]))>0){
-		tmpTableSeq = tmpTableSeq[-which(tmpTableSeq$seqType=="Mut" & tmpTableSeq$pos%in%tmp$pos[tmp$proba.x>=tmp$proba.y & tmp$Physio.x!="Yes"]),]
-	}
+    	tmp = tmp[order(tmp$proba.y,decreasing=T),]
+    	tmp = tmp[!duplicated(tmp$pos),]
+    	if(length(which(tmpTableSeq$seqType=="Mut" & tmpTableSeq$pos%in%tmp$pos[tmp$proba.x>=tmp$proba.y & tmp$Physio.x!="Yes"]))>0){
+    		tmpTableSeq = tmpTableSeq[-which(tmpTableSeq$seqType=="Mut" & tmpTableSeq$pos%in%tmp$pos[tmp$proba.x>=tmp$proba.y & tmp$Physio.x!="Yes"]),]
+    	}
+    }
 	return(tmpTableSeq)
 }
 
@@ -1425,7 +1306,6 @@ getMutInfo <- function(mutInput){
 getVariantInfo <- function(varID){
 	varID = as.character(varID)
 	varDecomp=unlist(strsplit(varID,":"))
-	print(varDecomp)
 
 	if(length(varDecomp)!=3 & length(varDecomp)!=2){
 		message("You must import variant as:Transcrit:position(:)nucleotidic change")
@@ -1602,7 +1482,7 @@ getPredConfident <- function(interpretFinal, RegType){
 	return (probaInter)
 }
 
-getOutput <- function(data,i){
+getOutput <- function(){
 	getPosSSphysio(transcript)
 	getNearestPos(sens, varPos ,posDon, posAcc)
 
@@ -1648,29 +1528,29 @@ getOutput <- function(data,i){
 	varType <<- varType
 	tmpTableSeqNoPhyMut = tmpTableSeq[tmpTableSeq$Physio!="Yes" & tmpTableSeq$seqType == "Mut",]
 
-	data$chr[i] <<- chr
-	data$strand[i] <<- sens
-	data$gNomen[i] <<- varPos[1]
-	data$NearestSS[i] <<- SstypePhy
+	chr <- chr
+	strand <- sens
+	gNomen <- varPos[1]
+	NearestSS <- SstypePhy
 	if(length(varPos)==1){
-		data$distSS[i] <<- distSS
+		DistSS <- distSS
 	}else if(length(varPos)==2){
 		if(distSS[1]==distSS2){
-			data$distSS[i] <<- distSS[1]
+			DistSS <- distSS[1]
 		}else{
-			data$distSS[i] <<- paste(distSS, distSS2,sep="; ")
+			DistSS <- paste(distSS, distSS2,sep="; ")
 		}
 	}else{
 		print("erreur varpos")
 	}
-	data$RegType[i] <<- RegType
-	data$seqPhysio[i] <<- seqPhysio
-	data$seqMutated[i] <<- seqMutated
-	data$SPiCEproba[i] <<- SPiCEproba
-	data$SPiCEinter_2thr[i] <<- SPiCEinter_2thr
-	data$deltaMES[i] <<- deltaMES
-	data$mutInPBarea[i] <<- mutInPBareaBPP
-	data$deltaESRscore[i] <<- ESRscore
+	RegType <- RegType
+	seqPhysio <- seqPhysio
+	seqMutated <- seqMutated
+	SPiCEproba <- SPiCEproba
+	SPiCEinter_2thr <- SPiCEinter_2thr
+	deltaMES <- deltaMES
+	mutInPBarea <- mutInPBareaBPP
+	deltaESRscore <- ESRscore
 
 	if(nrow(tmpTableSeqNoPhyMut)>0){
 		tmpTableSeqMAXMut = tmpTableSeqNoPhyMut[tmpTableSeqNoPhyMut$proba==max(tmpTableSeqNoPhyMut$proba),]
@@ -1682,76 +1562,267 @@ getOutput <- function(data,i){
 		tmpTableSeqPhyMut = tmpTableSeq[tmpTableSeq$Physio=="Yes"& tmpTableSeq$seqType == "Mut" & tmpTableSeq$sstype==sstypCrypt,]
 
 		getNearestPosCrypt(sens, as.numeric(tmpTableSeqMAXMut$pos) ,posDon, posAcc)
-		data$posCryptMut[i] <<- tmpTableSeqMAXMut$pos
-		data$sstypeCryptMut[i] <<- as.character(tmpTableSeqMAXMut$sstype)
-		data$nearestSStoCrypt[i] <<- SstypePhyCrypt
-		data$nearestPosSStoCrypt[i] <<- nearestPosPhyCrypt
-		data$nearestDistSStoCrypt[i] <<- distSScrypt
-		data$probaCryptMut[i] <<- tmpTableSeqMAXMut$proba
-		data$classProbaCryptMut[i] <<- tmpTableSeqMAXMut$classProba
+		posCryptMut <- tmpTableSeqMAXMut$pos
+		sstypeCryptMut <- as.character(tmpTableSeqMAXMut$sstype)
+		nearestSStoCrypt <- SstypePhyCrypt
+		nearestPosSStoCrypt <- nearestPosPhyCrypt
+		nearestDistSStoCrypt <- distSScrypt
+		probaCryptMut <- tmpTableSeqMAXMut$proba
+		classProbaCryptMut <- tmpTableSeqMAXMut$classProba
 		if(nrow(tmpTableSeqMAXWT)>0){
-			data$posCryptWT[i] <<- tmpTableSeqMAXWT$pos[1]
-			data$probaCryptWT[i] <<- tmpTableSeqMAXWT$proba[1]
-			data$classProbaCryptWT[i] <<- tmpTableSeqMAXWT$classProba[1]
-		}
+			posCryptWT <- tmpTableSeqMAXWT$pos[1]
+			probaCryptWT <- tmpTableSeqMAXWT$proba[1]
+			classProbaCryptWT <- tmpTableSeqMAXWT$classProba[1]
+		} else{
+            posCryptWT <- 0
+            probaCryptWT <- 0
+            classProbaCryptWT <- "No"
+        }
 		if(nrow(tmpTableSeqPhy)>0){
-			data$posSSPhysio[i] <<- tmpTableSeqPhy$pos[1]
-			data$probaSSPhysio[i] <<- tmpTableSeqPhy$proba[1]
-			data$classProbaSSPhysio[i] <<- tmpTableSeqPhy$classProba[1]
-			data$probaSSPhysioMut[i] <<- tmpTableSeqPhy$proba[1]
-			data$classProbaSSPhysioMut[i] <<- tmpTableSeqPhy$classProba[1]
-		}
+			posSSPhysio <- tmpTableSeqPhy$pos[1]
+			probaSSPhysio <- tmpTableSeqPhy$proba[1]
+			classProbaSSPhysio <- tmpTableSeqPhy$classProba[1]
+			probaSSPhysioMut <- tmpTableSeqPhy$proba[1]
+			classProbaSSPhysioMut <- tmpTableSeqPhy$classProba[1]
+		}else{
+            posSSPhysio <- 0
+            probaSSPhysio <- 0
+            classProbaSSPhysio <- "No"
+            probaSSPhysioMut <- 0
+            classProbaSSPhysioMut <- "No"
+        }
 		if(nrow(tmpTableSeqPhyMut)>0){
-			data$probaSSPhysioMut[i] <<- tmpTableSeqPhyMut$proba[1]
-			data$classProbaSSPhysioMut[i] <<- tmpTableSeqPhyMut$classProba[1]
-		}
+			probaSSPhysioMut <- tmpTableSeqPhyMut$proba[1]
+			classProbaSSPhysioMut <- tmpTableSeqPhyMut$classProba[1]
+		}else{
+            probaSSPhysioMut <- 0
+            classProbaSSPhysioMut <- "No"
+        }
 	}else{
-		data$posCryptMut[i] <<- 0
-		data$sstypeCryptMut[i] <<- "No site"
-		data$nearestSStoCrypt[i] <<- "No site"
-		data$nearestPosSStoCrypt[i] <<- 0
-		data$nearestDistSStoCrypt[i] <<- 0
-		data$probaCryptMut[i] <<- 0
-		data$classProbaCryptMut[i] <<- "No"
-		data$posCryptWT[i] <<- 0
-		data$probaCryptWT[i] <<- 0
-		data$classProbaCryptWT[i] <<- "No"
-		data$posSSPhysio[i] <<- 0
-		data$probaSSPhysio[i] <<- 0
-		data$classProbaSSPhysio[i] <<- "No"
-		data$probaSSPhysioMut[i] <<- 0
-		data$classProbaSSPhysioMut[i] <<- "No"
+		posCryptMut <- 0
+		sstypeCryptMut <- "No site"
+		nearestSStoCrypt <- "No site"
+		nearestPosSStoCrypt <- 0
+		nearestDistSStoCrypt <- 0
+		probaCryptMut <- 0
+		classProbaCryptMut <- "No"
+		posCryptWT <- 0
+		probaCryptWT <- 0
+		classProbaCryptWT <- "No"
+		posSSPhysio <- 0
+		probaSSPhysio <- 0
+		classProbaSSPhysio <- "No"
+		probaSSPhysioMut <- 0
+		classProbaSSPhysioMut <- "No"
 	}
-	interpretation <- getGlobaInterpretation(SPiCEinter_2thr, RegType, deltaMES, mutInPBareaBPP, data$classProbaCryptMut[i], distSS[1], ESRscore)
-	data$Interpretation[i] <<- interpretation
-	data$InterConfident[i] <<- getPredConfident(interpretation, RegType)
+	interpretation <- getGlobaInterpretation(SPiCEinter_2thr, RegType, deltaMES, mutInPBareaBPP, classProbaCryptMut, distSS[1], ESRscore)
+	Interpretation <- interpretation
+	InterConfident <- getPredConfident(interpretation, RegType)
+
+    result <<- c(Interpretation, InterConfident, chr, strand, gNomen, seqPhysio, seqMutated, NearestSS, DistSS, RegType,
+        SPiCEproba, SPiCEinter_2thr, deltaMES, mutInPBarea, deltaESRscore, posCryptMut, sstypeCryptMut, nearestSStoCrypt,
+        nearestPosSStoCrypt, nearestDistSStoCrypt, probaCryptMut, classProbaCryptMut, posCryptWT, probaCryptWT,
+        classProbaCryptWT, posSSPhysio, probaSSPhysio, classProbaSSPhysio, probaSSPhysioMut, classProbaSSPhysioMut)
+}
+
+splitRawToTable <- function(raw, sep = "\t", head = TRUE){
+    if(head){
+        columNames = unlist(strsplit(raw[1],sep,fixed=TRUE))
+        nCol = length(columNames)
+        splitRaw = unlist(strsplit(raw[2:length(raw)],sep,fixed=TRUE))
+        data=as.data.frame(matrix(splitRaw, ncol = nCol,byrow = TRUE))
+        colnames(data) <- columNames
+    }else{
+        nCol = length(as.numeric(unlist(gregexpr("\t", raw[1] ,fixed=TRUE))))+1
+        splitRaw = unlist(strsplit(raw, sep, fixed=TRUE))
+        data=as.data.frame(matrix(splitRaw, ncol = nCol, byrow = TRUE))
+    }
+    return(data)
+}
+
+SPiP <- function(varID){
+	tryCatch({
+		getVariantInfo(as.character(varID))
+        tmp <- getOutput()
+        result <<- list(tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[6], tmp[7], tmp[8], tmp[9], tmp[10],
+            tmp[11], tmp[12], tmp[13], tmp[14], tmp[15], tmp[16], tmp[17], tmp[18], tmp[19], tmp[20],
+            tmp[21], tmp[22], tmp[23], tmp[27], tmp[25], tmp[26], tmp[27], tmp[28], tmp[29], tmp[30])
+		},
+	error=function(cond) {
+		message(paste("Variant caused a error:", varID))
+		message("Here's the original error message:")
+		message(cond)
+	})
 }
 
 #launch analysis
 
 T1 <- as.numeric(format(Sys.time(), "%s"))
 
-for (i in 1:nrow(data)){
-	tryCatch({
-		print(i)
-		getVariantInfo(as.character(data$varID[i]))
-		},
-	error=function(cond) {
-		message(paste("Variant caused a error:", data[i,"varID"]))
-		message("Here's the original error message of getVariantInfo function:")
-		message(cond)
-	})
-	tryCatch({
-		getOutput(data,i)
-		},
-	error=function(cond) {
-		message(paste("Variant caused a error:", data[i,"varID"]))
-		message("Here's the original error message of getOutput function:")
-		message(cond)
-	})
+#import data
+s<-0
+con<-file(inputFile,"r")
+fileFormat = tolower(substr(basename(inputFile),nchar(basename(inputFile))-2,nchar(basename(inputFile))))
+
+getTranscriptFromVCF <- function(chrom, pos){
+	if(substr(as.character(chrom),1,3)!="chr"){
+		chrom = paste("chr",chrom,sep="")
+	}
+	transcript = as.character(dataRefSeq[dataRefSeq$V1==chrom & dataRefSeq$V2<=pos & dataRefSeq$V3>=pos,'V4'])
+	if(length(transcript)==0){
+		transcript = "no transcript"
+		return(transcript)
+	}else{
+		return(transcript)
+	}
 }
+
+getMutationFromVCF <- function (REF, ALT){
+	if(as.numeric(regexpr(',',ALT,fixed =TRUE))<0){
+		if(REF=='.'){
+			mut = paste('ins',ALT,sep="")
+		}else if(ALT=='.'){
+			mut = 'del'
+		}else{
+			if(nchar(REF)>1 | nchar(ALT)>1){
+				mut = paste('delins',ALT,sep="")
+			}else{
+				mut = paste(REF,ALT,sep=">")
+			}
+		}
+	}else{
+		ALT = unlist(strsplit(ALT,',',fixed = TRUE))
+		mut=NULL
+		for (i in 1:length(ALT)){
+			if(REF=='.'){
+				mut[i] = paste('ins',ALT[i],sep="")
+			}else if(ALT[i]=='.'){
+				mut[i] = 'del'
+			}else{
+				if(nchar(REF)>1 | nchar(ALT[i])>1){
+					mut[i] = paste('delins',ALT[i],sep="")
+				}else{
+					mut[i] = paste(REF,ALT[i],sep=">")
+				}
+			}
+		}
+	}
+	return(mut)
+}
+
+getPositionFromVCF <- function(POS, REF){
+	if(nchar(REF)>1){
+		start= POS
+		end = POS+(nchar(REF)-1)
+		pos = paste('g.',paste(start,end,sep='_'),sep="")
+	}else{
+		pos = paste('g.',POS,sep="")
+	}
+	return(pos)
+}
+
+getVariantFromVCF <- function(transcript,position,mutation){
+	transPos = paste(unlist(transcript),unlist(position),sep=":")
+	mutation = unlist(mutation)
+	transPosAdj = rep(transPos,length(mutation))
+	variant = paste(transPosAdj,rep(mutation,each = length(transPos)),sep=":")
+	return(variant)
+}
+
+readVCF <- function(dataLine){
+	dataLine = unlist(strsplit(dataLine,split='\t')) #c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO")
+	transcript = getTranscriptFromVCF(dataLine[1],as.numeric(dataLine[2]))
+	position = getPositionFromVCF(as.numeric(dataLine[2]),dataLine[4])
+	mutation =getMutationFromVCF(dataLine[4],dataLine[5])
+	variant = getVariantFromVCF(transcript,position,mutation)
+	result <<- list(variant)
+}
+
+message("##################")
+message("#SPiP calculation:")
+message("##################")
+
+while(T){
+    message(paste(s+1,s+maxLines,sep=" to "))
+    raw<-readLines(con, n=maxLines)
+    if(length(raw)==0) break
+    message(paste(sub(" CET",":",Sys.time(),fixed=T),"Read lines..."))
+    if(fileFormat=="txt"){
+        if(s==0){
+            data = splitRawToTable(raw,head=TRUE)
+            columNames <- names(data)
+            if(is.null(data$varID)){
+                message("###########################")
+                message("#Your data doesn't have the varID column")
+                message("###########################")
+                print_help(opt_parser)
+                stop()
+            }
+        }else{
+            data = splitRawToTable(raw,head=FALSE)
+            colnames(data) <- columNames
+        }
+    }else if(fileFormat=="vcf"){
+        VCFlines = raw[-grep("#",raw,fixed=TRUE)]
+        tmp = mapply(readVCF,VCFlinesraw)
+        data$varID = as.character(unlist(tmp))
+        data$annot = gsub('\t','|_|',names(unlist(tmp)),fixed=TRUE)
+        data= as.data.frame(data)
+        if (length(data[grep('no transcript',data[,'varID']),'varID'])>0){
+            message(paste( "I find no transcrit for the mutation:",paste(data[grep('no transcript',data[,'varID']),'varID'],collapse=", ")))
+            data = data[-grep('no transcript',data[,'varID']),]
+        }
+    }else{
+        message("###########################")
+        message("#Incorrect format of input, please try again with a txt or vcf file")
+        message("###########################")
+        print_help(opt_parser)
+        stop()
+    }
+    message(paste(gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
+    tmpResult = mcmapply(FUN = SPiP, data[,"varID"], mc.cores = threads, mc.preschedule = TRUE)
+
+    data$Interpretation <- unlist(tmpResult[1,])
+    data$InterConfident <- unlist(tmpResult[2,])
+    data$chr <- unlist(tmpResult[3,])
+    data$strand <- unlist(tmpResult[4,])
+    data$gNomen <- unlist(tmpResult[5,])
+    data$seqPhysio <- unlist(tmpResult[6,])
+    data$seqMutated <- unlist(tmpResult[7,])
+    data$NearestSS <- unlist(tmpResult[8,])
+    data$distSS <- unlist(tmpResult[9,])
+    data$RegType <- unlist(tmpResult[10,])
+    data$SPiCEproba <- unlist(tmpResult[11,])
+    data$SPiCEinter_2thr <- unlist(tmpResult[12,])
+    data$deltaMES <- unlist(tmpResult[13,])
+    data$mutInPBarea <- unlist(tmpResult[14,])
+    data$deltaESRscore <- unlist(tmpResult[15,])
+    data$posCryptMut <- unlist(tmpResult[16,])
+    data$sstypeCryptMut <- unlist(tmpResult[17,])
+    data$nearestSStoCrypt <- unlist(tmpResult[18,])
+    data$nearestPosSStoCrypt <- unlist(tmpResult[19,])
+    data$nearestDistSStoCrypt <- unlist(tmpResult[20,])
+    data$probaCryptMut <- unlist(tmpResult[21,])
+    data$classProbaCryptMut <- unlist(tmpResult[22,])
+    data$posCryptWT <- unlist(tmpResult[23,])
+    data$probaCryptWT <- unlist(tmpResult[24,])
+    data$classProbaCryptWT <- unlist(tmpResult[25,])
+    data$posSSPhysio <- unlist(tmpResult[26,])
+    data$probaSSPhysio <- unlist(tmpResult[27,])
+    data$classProbaSSPhysio <- unlist(tmpResult[28,])
+    data$probaSSPhysioMut <- unlist(tmpResult[29,])
+    data$classProbaSSPhysioMut <- unlist(tmpResult[30,])
+
+    if(s==0){
+        write.table(data,outputFile,sep="\t",dec=".",row.names=F,quote=F)
+    }else{
+        write.table(data,outputFile,sep="\t",dec=".", row.names=F, col.names=F, quote=F,append=TRUE)
+    }
+    s<-s+maxLines
+}
+
+close(con)
+
 T2 <- as.numeric(format(Sys.time(), "%s"))
 
 print(paste("Runtime:",round((T2 - T1),3),"sec"))
-
-write.table(data,outputFile,sep="\t",dec=".",row.names=F)
