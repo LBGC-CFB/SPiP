@@ -1254,7 +1254,7 @@ getBPParea <- function(varPos,transcript,genome){
 				posBP = tmpAnnotBP[tmpAnnotBP$start<=varPos & tmpAnnotBP$end>=varPos,"posBP"]
 				distToAcc = tmpAnnotBP[tmpAnnotBP$start<=varPos & tmpAnnotBP$end>=varPos,"distToAcc"]
 				score = tmpAnnotBP[tmpAnnotBP$start<=varPos & tmpAnnotBP$end>=varPos,"score"]
-				mutInPBareaBPP = paste("Yes, g.",posBP," (",distToAcc,"): ",round(score,3), sep = "")
+				mutInPBareaBPP = paste("Yes g.",posBP," (",distToAcc,"): ",round(score,3), sep = "")
 			}else{
 				mutInPBareaBPP = "No"
 			}
@@ -1271,7 +1271,7 @@ getBPParea <- function(varPos,transcript,genome){
 				score = tmpAnnotBP[(tmpAnnotBP$start<=varPos[1] & tmpAnnotBP$end>=varPos[1]) |
 								(tmpAnnotBP$start<=varPos[2] & tmpAnnotBP$end>=varPos[2]) |
 								(tmpAnnotBP$start>varPos[1] & tmpAnnotBP$end<varPos[2]),"score"]
-				mutInPBareaBPP = paste("Yes, g.",posBP," (",distToAcc,"): ",round(score,3), sep = "")
+				mutInPBareaBPP = paste("Yes g.",posBP," (",distToAcc,"): ",round(score,3), sep = "")
 			}else{
 				mutInPBareaBPP = "No"
 			}
@@ -1641,187 +1641,159 @@ splitRawToTable <- function(raw, sep = "\t", head = TRUE){
 }
 
 SPiP <- function(varID){
-	tryCatch({
-		getVariantInfo(as.character(varID))
-        tmp <- getOutput()
-        result <<- list(tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[6], tmp[7], tmp[8], tmp[9], tmp[10],
-            tmp[11], tmp[12], tmp[13], tmp[14], tmp[15], tmp[16], tmp[17], tmp[18], tmp[19], tmp[20],
-            tmp[21], tmp[22], tmp[23], tmp[27], tmp[25], tmp[26], tmp[27], tmp[28], tmp[29], tmp[30])
-		},
-	error=function(cond) {
-		message(paste("Variant caused a error:", varID))
-		message("Here's the original error message:")
-		message(cond)
-	})
+    if(as.numeric(regexpr('no transcript',varID))>0|
+        as.numeric(regexpr('NR_',varID))>0|
+        as.numeric(regexpr('mutUnknown',varID))>0)
+    {
+        return(paste(rep("NA",30),collapse="\t"))
+    }else{
+        tryCatch({
+            getVariantInfo(as.character(varID))
+            tmp <- getOutput()
+            return(paste(tmp,collapse="\t"))
+            },
+        error=function(cond) {
+            message(paste("Variant caused a error:", varID))
+            message("Here's the original error message:")
+            message(cond)
+            return(paste(rep("NA",30),collapse="\t"))
+        })
+    }
 }
-
 #launch analysis
 
 T1 <- as.numeric(format(Sys.time(), "%s"))
 
 #import data
-s<-0
-con<-file(inputFile,"r")
-fileFormat = tolower(substr(basename(inputFile),nchar(basename(inputFile))-2,nchar(basename(inputFile))))
-
-getTranscriptFromVCF <- function(chrom, pos){
-	if(substr(as.character(chrom),1,3)!="chr"){
-		chrom = paste("chr",chrom,sep="")
-	}
-	transcript = as.character(dataRefSeq[dataRefSeq$V1==chrom & dataRefSeq$V2<=pos & dataRefSeq$V3>=pos,'V4'])
-	if(length(transcript)==0){
-		transcript = "no transcript"
-		return(transcript)
-	}else{
-		return(transcript)
-	}
-}
-
-getMutationFromVCF <- function (REF, ALT){
-	if(as.numeric(regexpr(',',ALT,fixed =TRUE))<0){
-		if(REF=='.'){
-			mut = paste('ins',ALT,sep="")
-		}else if(ALT=='.'){
-			mut = 'del'
-		}else{
-			if(nchar(REF)>1 | nchar(ALT)>1){
-				mut = paste('delins',ALT,sep="")
-			}else{
-				mut = paste(REF,ALT,sep=">")
-			}
-		}
-	}else{
-		ALT = unlist(strsplit(ALT,',',fixed = TRUE))
-		mut=NULL
-		for (i in 1:length(ALT)){
-			if(REF=='.'){
-				mut[i] = paste('ins',ALT[i],sep="")
-			}else if(ALT[i]=='.'){
-				mut[i] = 'del'
-			}else{
-				if(nchar(REF)>1 | nchar(ALT[i])>1){
-					mut[i] = paste('delins',ALT[i],sep="")
-				}else{
-					mut[i] = paste(REF,ALT[i],sep=">")
-				}
-			}
-		}
-	}
-	return(mut)
-}
-
-getPositionFromVCF <- function(POS, REF){
-	if(nchar(REF)>1){
-		start= POS
-		end = POS+(nchar(REF)-1)
-		pos = paste('g.',paste(start,end,sep='_'),sep="")
-	}else{
-		pos = paste('g.',POS,sep="")
-	}
-	return(pos)
-}
-
-getVariantFromVCF <- function(transcript,position,mutation){
-	transPos = paste(unlist(transcript),unlist(position),sep=":")
-	mutation = unlist(mutation)
-	transPosAdj = rep(transPos,length(mutation))
-	variant = paste(transPosAdj,rep(mutation,each = length(transPos)),sep=":")
-	return(variant)
-}
 
 readVCF <- function(dataLine){
-	dataLine = unlist(strsplit(dataLine,split='\t')) #c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO")
-	transcript = getTranscriptFromVCF(dataLine[1],as.numeric(dataLine[2]))
-	position = getPositionFromVCF(as.numeric(dataLine[2]),dataLine[4])
-	mutation =getMutationFromVCF(dataLine[4],dataLine[5])
-	variant = getVariantFromVCF(transcript,position,mutation)
-	result <<- list(variant)
+    dataLine = unlist(strsplit(dataLine,split='\t')) #c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO")
+    chrom <- dataLine[1]
+    pos <- as.numeric(dataLine[2])
+    ref <- dataLine[4]
+    alt <- dataLine[5]
+    if(ref=="."|alt=="."){
+        variant = "mutUnknown"
+    }else{
+        if(substr(as.character(chrom[1]),1,3)!="chr"){
+            chrom = paste("chr",chrom,sep="")
+        }
+        transcript = as.character(dataRefSeq[dataRefSeq$V1==chrom & dataRefSeq$V2<=pos & dataRefSeq$V3>=pos,'V4'])
+        strandTrans = as.character(dataRefSeq[dataRefSeq$V1==chrom & dataRefSeq$V2<=pos & dataRefSeq$V3>=pos,'V6'])
+        if(length(transcript)==0){
+            variant = paste("no transcript",pos,sep=":")
+        }else{
+            altSplit = unlist(strsplit(alt,',',fixed = TRUE))
+            variant = NULL
+            for(i in 1:length(transcript)){
+                if(strandTrans[i]=="+"){
+                    for(j in 1:length(altSplit)){
+                        if(nchar(ref)==1 & nchar(altSplit[j])==1){
+                            variant = c(variant,paste(transcript[i],':','g.',pos,':',ref,'>',altSplit[j],sep=""))
+                        }else{
+                            variant = c(variant,paste(transcript[i],':g.',pos,"_",pos+nchar(ref)-1,':delins',altSplit[j],sep=""))
+                        }
+                    }
+                }else if(strandTrans[i]=="-"){
+                    refRev = getRevSeq(ref)
+                    for(j in 1:length(altSplit)){
+                        altRev = getRevSeq(altSplit[j])
+                        if(nchar(refRev)==1 & nchar(altRev)==1){
+                            variant = c(variant,paste(transcript[i],':g.',pos,':',refRev,'>',altRev,sep=""))
+                        }else{
+                            variant = c(variant,paste(transcript[i],':g.',pos+nchar(refRev)-1,"_",pos,':delins',altRev,sep=""))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    result <<- list(variant)
 }
 
-message("##################")
-message("#SPiP calculation:")
-message("##################")
+s<-0 # first iteration
+input<-file(inputFile,"r")
 
-while(T){
-    message(paste(s+1,s+maxLines,sep=" to "))
-    raw<-readLines(con, n=maxLines)
-    if(length(raw)==0) break
-    message(paste(sub(" CET",":",Sys.time(),fixed=T),"Read lines..."))
-    if(fileFormat=="txt"){
-        if(s==0){
-            data = splitRawToTable(raw,head=TRUE)
-            columNames <- names(data)
-            if(is.null(data$varID)){
-                message("###########################")
-                message("#Your data doesn't have the varID column")
-                message("###########################")
-                print_help(opt_parser)
-                stop()
-            }
-        }else{
-            data = splitRawToTable(raw,head=FALSE)
-            colnames(data) <- columNames
-        }
-    }else if(fileFormat=="vcf"){
-        VCFlines = raw[-grep("#",raw,fixed=TRUE)]
-        tmp = mapply(readVCF,VCFlinesraw)
-        data$varID = as.character(unlist(tmp))
-        data$annot = gsub('\t','|_|',names(unlist(tmp)),fixed=TRUE)
-        data= as.data.frame(data)
-        if (length(data[grep('no transcript',data[,'varID']),'varID'])>0){
-            message(paste( "I find no transcrit for the mutation:",paste(data[grep('no transcript',data[,'varID']),'varID'],collapse=", ")))
-            data = data[-grep('no transcript',data[,'varID']),]
-        }
-    }else{
+output<-file(outputFile,"w")
+
+fileFormat = tolower(substr(basename(inputFile),nchar(basename(inputFile))-2,nchar(basename(inputFile))))
+
+message(paste(s+1,s+maxLines,sep=" to "))
+rawInput<-readLines(input, n=maxLines)
+if(length(rawInput)==0) stop()
+message(paste(sub(" CET",":",Sys.time(),fixed=T),"Read lines..."))
+if(fileFormat=="txt"){
+    data = splitRawToTable(rawInput,head=TRUE)
+    columNames <- names(data)
+    rawInput = rawInput[-1]
+    if(is.null(data$varID)){
         message("###########################")
-        message("#Incorrect format of input, please try again with a txt or vcf file")
+        message("#Your data doesn't have the varID column")
         message("###########################")
         print_help(opt_parser)
         stop()
     }
-    message(paste(gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
-    tmpResult = mcmapply(FUN = SPiP, data[,"varID"], mc.cores = threads, mc.preschedule = TRUE)
+}else if(fileFormat=="vcf"){
+    rawInput = rawInput[-grep("#",rawInput,fixed=TRUE)]
+    columNames <- c("#CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO", "varID")
+    message(paste(sub(" CET",":",Sys.time(),fixed=T),"Align VCF mutation on transcripts..."))
+    tmpVCF = unlist(mcmapply(FUN = readVCF,rawInput, mc.cores = threads, mc.preschedule = TRUE))
+    data = data.frame(varID = as.character(tmpVCF))
+    rawInput = paste(names(tmpVCF),data[,'varID'],sep="\t")
+}else{
+    message("###########################")
+    message("#Incorrect format of input, please try again with a txt or vcf file")
+    message("###########################")
+    print_help(opt_parser)
+    stop()
+}
+message(paste(gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
+rawResult = mcmapply(FUN = SPiP, data[,"varID"], mc.cores = threads, mc.preschedule = TRUE)
 
-    data$Interpretation <- unlist(tmpResult[1,])
-    data$InterConfident <- unlist(tmpResult[2,])
-    data$chr <- unlist(tmpResult[3,])
-    data$strand <- unlist(tmpResult[4,])
-    data$gNomen <- unlist(tmpResult[5,])
-    data$seqPhysio <- unlist(tmpResult[6,])
-    data$seqMutated <- unlist(tmpResult[7,])
-    data$NearestSS <- unlist(tmpResult[8,])
-    data$distSS <- unlist(tmpResult[9,])
-    data$RegType <- unlist(tmpResult[10,])
-    data$SPiCEproba <- unlist(tmpResult[11,])
-    data$SPiCEinter_2thr <- unlist(tmpResult[12,])
-    data$deltaMES <- unlist(tmpResult[13,])
-    data$mutInPBarea <- unlist(tmpResult[14,])
-    data$deltaESRscore <- unlist(tmpResult[15,])
-    data$posCryptMut <- unlist(tmpResult[16,])
-    data$sstypeCryptMut <- unlist(tmpResult[17,])
-    data$nearestSStoCrypt <- unlist(tmpResult[18,])
-    data$nearestPosSStoCrypt <- unlist(tmpResult[19,])
-    data$nearestDistSStoCrypt <- unlist(tmpResult[20,])
-    data$probaCryptMut <- unlist(tmpResult[21,])
-    data$classProbaCryptMut <- unlist(tmpResult[22,])
-    data$posCryptWT <- unlist(tmpResult[23,])
-    data$probaCryptWT <- unlist(tmpResult[24,])
-    data$classProbaCryptWT <- unlist(tmpResult[25,])
-    data$posSSPhysio <- unlist(tmpResult[26,])
-    data$probaSSPhysio <- unlist(tmpResult[27,])
-    data$classProbaSSPhysio <- unlist(tmpResult[28,])
-    data$probaSSPhysioMut <- unlist(tmpResult[29,])
-    data$classProbaSSPhysioMut <- unlist(tmpResult[30,])
+message(paste(sub(" CET",":",Sys.time(),fixed=T),"Write results..."))
 
-    if(s==0){
-        write.table(data,outputFile,sep="\t",dec=".",row.names=F,quote=F)
-    }else{
-        write.table(data,outputFile,sep="\t",dec=".", row.names=F, col.names=F, quote=F,append=TRUE)
+colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "seqPhysio", "seqMutated", "NearestSS",
+    "distSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
+    "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "probaCryptMut", "classProbaCryptMut", "posCryptWT", "probaCryptWT",
+    "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
+
+writeLines(c(colNames,paste(rawInput,rawResult,sep="\t")),con = output,sep="\n")
+
+s<-s+maxLines
+
+flush(output)
+close(output)
+
+# Remaining iteration
+output<-file(outputFile,"a")
+while(T){
+    message(paste(s+1,s+maxLines,sep=" to "))
+    rawInput<-readLines(input, n=maxLines)
+    if(length(rawInput)==0) break
+    message(paste(sub(" CET",":",Sys.time(),fixed=T),"Read lines..."))
+    if(fileFormat=="txt"){
+        data = splitRawToTable(rawInput,head=FALSE)
+        colnames(data) <- columNames
+    }else if(fileFormat=="vcf"){
+        if(as.numeric(regexpr("#",rawInput[1]))>0){
+            rawInput = rawInput[-grep("#",rawInput,fixed=TRUE)]
+        }
+        message(paste(sub(" CET",":",Sys.time(),fixed=T),"Align VCF mutation on transcripts..."))
+        tmpVCF = unlist(mcmapply(FUN = readVCF,rawInput, mc.cores = threads, mc.preschedule = TRUE))
+        data = data.frame(varID = as.character(tmpVCF))
+        rawInput = paste(names(tmpVCF),data[,'varID'],sep="\t")
     }
+    message(paste(gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
+    rawResult = mcmapply(FUN = SPiP, data[,"varID"], mc.cores = threads, mc.preschedule = TRUE)
+
+    message(paste(sub(" CET",":",Sys.time(),fixed=T),"Write results..."))
+    writeLines(paste(rawInput,rawResult,sep="\t"), con = output, sep = "\n")
+    flush(output)
     s<-s+maxLines
 }
 
-close(con)
+close(input)
+close(output)
 
 T2 <- as.numeric(format(Sys.time(), "%s"))
 
