@@ -621,7 +621,7 @@ getRevSeq <- function(sequence){
 getSeqFromSamtools <- function(chromosome,start,end,strand,command,fastaRef){
 	posToAsk <- paste(chromosome,':',start,'-',end,sep="")
 	path2script <- paste('faidx',fastaRef,posToAsk)
-	samtoolsSeq = system2(command, args=path2script, stdout = TRUE)
+    samtoolsSeq = system2(command, args=path2script, stdout = TRUE)
 	samtoolsSeq = samtoolsSeq[-1]
 
 	if(length(samtoolsSeq)>1){
@@ -1039,6 +1039,7 @@ getSplitTableSeq <- function(varName, chr, varPos, sens, seqPhysio, seqMutated, 
     	if(nrow(tmpTableSeq[tmpTableSeq$Physio=="Yes",])!=0){
     		tmpTableSeq = tmpTableSeq[!(tmpTableSeq$pos%in%tmpTableSeq$pos[tmpTableSeq$Physio=="Yes"] & tmpTableSeq$Physio!="Yes"),]
     	}
+        tmpTableSeq = tmpTableSeq[!is.na(tmpTableSeq$sstype),]
     	tmpScore = mapply(getScore, tmpTableSeq$sstype, as.character(tmpTableSeq$seqExon), as.character(tmpTableSeq$seqCons))
 
     	tmpTableSeq$MES = unlist(tmpScore[1,])
@@ -1207,6 +1208,7 @@ getSPiCE <- function(SstypePhy, seqConsWT, seqConsMut){
 	SSFmut = getSSF(paste(toupper(substr(SstypePhy,1,1)),substr(SstypePhy,2,3),sep=""),seqConsMut)
 	MESwt = getMES(paste(toupper(substr(SstypePhy,1,1)),substr(SstypePhy,2,3),sep=""),seqConsWT)
 	MESmut = getMES(paste(toupper(substr(SstypePhy,1,1)),substr(SstypePhy,2,3),sep=""),seqConsMut)
+
 	if (MESwt==0){
 		deltaMES=0
 	}else{
@@ -1217,7 +1219,12 @@ getSPiCE <- function(SstypePhy, seqConsWT, seqConsMut){
 	}else{
 		deltaSSF = (SSFmut-SSFwt)/SSFwt
 	}
-	SPiCEproba <<- round(exp(-3.59-8.21*round(deltaMES,3)-32.30*round(deltaSSF,3))/(1+exp(-3.59-8.21*round(deltaMES,3)-32.30*round(deltaSSF,3))),5)
+    if(exp(-3.59-8.21*round(deltaMES,3)-32.30*round(deltaSSF,3))==Inf){
+        SPiCEproba <<- 1
+    }else{
+        SPiCEproba <<- round(exp(-3.59-8.21*round(deltaMES,3)-32.30*round(deltaSSF,3))/(1+exp(-3.59-8.21*round(deltaMES,3)-32.30*round(deltaSSF,3))),5)
+    }
+
 	if(SPiCEproba<0.115){
 		SPiCEinter_2thr <<- "low"
 	}else if(SPiCEproba>0.749){
