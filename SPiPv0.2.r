@@ -130,10 +130,14 @@ message(paste(useOption,collapse="\t"))
 
 #Get Ref files
 inputref = paste(scriptPath, "/RefFiles",sep="")
+message("Check RefSeq database...")
+if(!file.exists(paste(inputref,"/dataRefSeqhg19.RData",sep="")) & !file.exists(paste(inputref,"/dataRefSeqhg38.RData",sep=""))){
+	message("Create RefSeq database...")
+	source(paste(inputref,"/getRefSeqDatabase.r",sep=""))
+}
+
 load(paste(inputref, "/dataRefSeq",genome,".RData",sep=""))
 load(paste(inputref, "/RefFiles.RData",sep=""))
-
-dataRefSeq = dataRefSeq[-grep("_",dataRefSeq$V1),]
 
 mint_GT=sum(as.numeric(as.vector(sub("Min.   :","",summary(ref_score_GT)[1,]))))
 maxt_GT=sum(as.numeric(as.vector(sub("Max.   :","",summary(ref_score_GT)[6,]))))
@@ -186,8 +190,7 @@ inverseDic$V1 <- as.character(inverseDic$V1)
 getPosSSphysio <- function(transcrit){
 
 	if(dim(dataRefSeq[dataRefSeq$V4==transcrit,])[1]==0){
-		tkmessageBox(message = paste("I don't find the transcript:",transcrit,"in the Refseq database"),
-		icon = "error",type="ok", title="SPiCE alert")
+		paste("I don't find the transcript:",transcrit,"in the Refseq database")
 	}else{
 
 		chr <<- as.character(dataRefSeq[dataRefSeq$V4==transcrit,1])
@@ -226,7 +229,7 @@ getPosSSphysio <- function(transcrit){
 }
 
 getNearestPos <- function(sens, varPos ,posDon, posAcc){
-	varPos1 = varPos[1]
+    varPos1 = varPos[1]
 	distSS2 = NULL
 	varPos2 = NULL
 	if(length(varPos)==2){
@@ -641,6 +644,14 @@ getSeqFromSamtools <- function(chromosome,start,end,strand,command,fastaRef){
 	return(seqDNA)
 }
 
+checkCalculableScore <- function(seq){
+    scoreCalculable<<-TRUE
+    if(as.numeric(regexpr("N",seq))>0){
+        print(paste("Unknown sequence:",seq))
+        scoreCalculable<<-FALSE
+    }
+}
+
 getSequencePhysio <- function(genome,sens,chr,start,end){
 	if(useEnsemblAPI=="YES"){
 		if(genome=="hg38"){
@@ -763,50 +774,53 @@ hashseq <- function( seq ){
 }
 
 MESdonor <- function(seqDon){
-	spliseq=unlist(strsplit(seqDon,split=""))
-	valueCons1=cons1$score[cons1$N==spliseq[4]]
-	valueCons2=cons2$score[cons2$N==spliseq[5]]
-	valueN1=bgd$score[bgd$N==spliseq[4]]
-	valueN2=bgd$score[bgd$N==spliseq[5]]
-	valueCan=(valueCons1*valueCons2)/(valueN1*valueN2)
-	seqNcan=paste(spliseq[1],spliseq[2],spliseq[3],spliseq[6],spliseq[7],spliseq[8],spliseq[9],sep="")
-	valueNcan=me2x5[seqNcan]
-	MESscore <<- log(valueNcan*valueCan)/log(2)
+    spliseq=unlist(strsplit(seqDon,split=""))
+    valueCons1=cons1$score[cons1$N==spliseq[4]]
+    valueCons2=cons2$score[cons2$N==spliseq[5]]
+    valueN1=bgd$score[bgd$N==spliseq[4]]
+    valueN2=bgd$score[bgd$N==spliseq[5]]
+    valueCan=(valueCons1*valueCons2)/(valueN1*valueN2)
+    seqNcan=paste(spliseq[1],spliseq[2],spliseq[3],spliseq[6],spliseq[7],spliseq[8],spliseq[9],sep="")
+    valueNcan=me2x5[seqNcan]
+    MESscore <<- log(valueNcan*valueCan)/log(2)
 }
 
 MESacceptor <- function(seqAcc){
-	spliseqAcc=unlist(strsplit(seqAcc,split=""))
-	valueCons1_acc=cons1_acc$score[cons1_acc$N==spliseqAcc[19]]
-	valueCons2_acc=cons2_acc$score[cons2_acc$N==spliseqAcc[20]]
-	valueN1_acc=bgd$score[bgd$N==spliseqAcc[19]]
-	valueN2_acc=bgd$score[bgd$N==spliseqAcc[20]]
-	valueCanAcc=(valueCons1_acc*valueCons2_acc)/(valueN1_acc*valueN2_acc)
-	seqNcanAcc=c(spliseqAcc[1:18],spliseqAcc[21:23])
-	sc=rep(0,9)
-	sc[1]=me2x3acc1[hashseq(seqNcanAcc[1:7]),1]
-	sc[2]=me2x3acc2[hashseq(seqNcanAcc[8:14]),1]
-	sc[3]=me2x3acc3[hashseq(seqNcanAcc[15:21]),1]
-	sc[4]=me2x3acc4[hashseq(seqNcanAcc[5:11]),1]
-	sc[5]=me2x3acc5[hashseq(seqNcanAcc[12:18]),1]
-	sc[6]=me2x3acc6[hashseq(seqNcanAcc[5:7]),1]
-	sc[7]=me2x3acc7[hashseq(seqNcanAcc[8:11]),1]
-	sc[8]=me2x3acc8[hashseq(seqNcanAcc[12:14]),1]
-	sc[9]=me2x3acc9[hashseq(seqNcanAcc[15:18]),1]
-	scoreNcan=(sc[1] * sc[2] * sc[3] * sc[4] * sc[5]) /
-		(sc[6] * sc[7] * sc[8] * sc[9])
-	MESscoreAcc <<- log(scoreNcan*valueCanAcc)/log(2)
+    spliseqAcc=unlist(strsplit(seqAcc,split=""))
+    valueCons1_acc=cons1_acc$score[cons1_acc$N==spliseqAcc[19]]
+    valueCons2_acc=cons2_acc$score[cons2_acc$N==spliseqAcc[20]]
+    valueN1_acc=bgd$score[bgd$N==spliseqAcc[19]]
+    valueN2_acc=bgd$score[bgd$N==spliseqAcc[20]]
+    valueCanAcc=(valueCons1_acc*valueCons2_acc)/(valueN1_acc*valueN2_acc)
+    seqNcanAcc=c(spliseqAcc[1:18],spliseqAcc[21:23])
+    sc=rep(0,9)
+    sc[1]=me2x3acc1[hashseq(seqNcanAcc[1:7]),1]
+    sc[2]=me2x3acc2[hashseq(seqNcanAcc[8:14]),1]
+    sc[3]=me2x3acc3[hashseq(seqNcanAcc[15:21]),1]
+    sc[4]=me2x3acc4[hashseq(seqNcanAcc[5:11]),1]
+    sc[5]=me2x3acc5[hashseq(seqNcanAcc[12:18]),1]
+    sc[6]=me2x3acc6[hashseq(seqNcanAcc[5:7]),1]
+    sc[7]=me2x3acc7[hashseq(seqNcanAcc[8:11]),1]
+    sc[8]=me2x3acc8[hashseq(seqNcanAcc[12:14]),1]
+    sc[9]=me2x3acc9[hashseq(seqNcanAcc[15:18]),1]
+    scoreNcan=(sc[1] * sc[2] * sc[3] * sc[4] * sc[5]) /
+    	(sc[6] * sc[7] * sc[8] * sc[9])
+    MESscoreAcc <<- log(scoreNcan*valueCanAcc)/log(2)
 }
 
 getMES <- function(sstype,seqCon){
-	if(sstype=="Acc"){
-		scoreMES = MESacceptor(seqCon)
-	}else{
-		if(substr(as.vector(seqCon),4,5)=="GT"){
-			scoreMES = MESdonor(seqCon)
-		}else{
-			scoreMES = 0
-		}
-	}
+    checkCalculableScore(seqCon)
+    if(scoreCalculable){
+    	if(sstype=="Acc"){
+    		scoreMES = MESacceptor(seqCon)
+    	}else{
+    		if(substr(as.vector(seqCon),4,5)=="GT"){
+    			scoreMES = MESdonor(seqCon)
+    		}else{
+    			scoreMES = 0
+    		}
+    	}
+    }else{scoreMES = 0}
 	return(scoreMES)
 }
 
@@ -846,19 +860,22 @@ SSFacc <- function(SeqAcc1,SeqAcc2){
 }
 
 getSSF <- function(sstype,seqCon){
-	if (sstype=="Acc"){
-		seqSSFadj=substr(seqCon,7,21)
-		nEch1=substr(as.vector(seqSSFadj),1,10)
-		nEch2=substr(as.vector(seqSSFadj),12,15)
-		SSF = SSFacc(nEch1,nEch2)
+    checkCalculableScore(seqCon)
+    if(scoreCalculable){
+    	if (sstype=="Acc"){
+    		seqSSFadj=substr(seqCon,7,21)
+    		nEch1=substr(as.vector(seqSSFadj),1,10)
+    		nEch2=substr(as.vector(seqSSFadj),12,15)
+    		SSF = SSFacc(nEch1,nEch2)
 
-	}else{
-		if(substr(as.vector(seqCon),4,5)=="GC"){
-			SSF = SSFdonGT(seqCon)
-		}else{
-			SSF = SSFdonGT(seqCon)
-		}
-	}
+    	}else{
+    		if(substr(as.vector(seqCon),4,5)=="GC"){
+    			SSF = SSFdonGT(seqCon)
+    		}else{
+    			SSF = SSFdonGT(seqCon)
+    		}
+    	}
+    }else{SSF = 0}
 	return(SSF)
 }
 
@@ -900,7 +917,7 @@ getESRscore <- function(sstype,seq){
 }
 
 getScore <- function(sstype,seq,seqCon){
-	MES = getMES(sstype,seqCon)
+    MES = getMES(sstype,seqCon)
 	SSF = getSSF(sstype,seqCon)
 	ESR = getESRscore(sstype,seq)
 	result <<-list(MES,SSF,ESR)
@@ -1254,7 +1271,7 @@ getBPParea <- function(varPos,transcript,genome){
 
 	tmpAnnotBP = dataBPannot[dataBPannot$transcrit==transcript,]
 	if(nrow(tmpAnnotBP)==0){
-		mutInPBareaBPP = NA
+		mutInPBareaBPP = "No BPP-predicted BP in intron"
 	}else{
 		if(length(varPos)==1){
 			if(nrow(tmpAnnotBP[tmpAnnotBP$start<=varPos & tmpAnnotBP$end>=varPos,])==1){
@@ -1313,7 +1330,6 @@ getMutInfo <- function(mutInput){
 getVariantInfo <- function(varID){
 	varID = as.character(varID)
 	varDecomp=unlist(strsplit(varID,":"))
-
 	if(length(varDecomp)!=3 & length(varDecomp)!=2){
 		message("You must import variant as:Transcrit:position(:)nucleotidic change")
 	}else{
@@ -1432,7 +1448,11 @@ getGlobaInterpretation <- function(SPiCEinterpret, RegType, deltaMES, mutInPBare
 		interpretFinal = c(interpretFinal,"Alter by MES (Poly TC)")
 	}
 	if (length(grep("BP",RegType ))>0 & mutInPBareaBPP!="No"){
-		interpretFinal = c(interpretFinal,"Alter BP")
+        if(mutInPBareaBPP=="No BPP-predicted BP in intron"){
+            interpretFinal = c(interpretFinal,"Pos BP unknown")
+        }else{
+            interpretFinal = c(interpretFinal,"Alter BP")
+        }
 	}
 	if (classProbaMut=="Yes"){
 		if(abs(distSS)>=150 & length(grep("Intron",RegType ))>0) {
@@ -1649,7 +1669,6 @@ splitRawToTable <- function(raw, sep = "\t", head = TRUE){
 
 SPiP <- function(varID){
     if(as.numeric(regexpr('no transcript',varID))>0|
-        as.numeric(regexpr('NR_',varID))>0|
         as.numeric(regexpr('mutUnknown',varID))>0)
     {
         return(paste(rep("NA",30),collapse="\t"))
@@ -1696,7 +1715,7 @@ readVCF <- function(dataLine){
                 if(strandTrans[i]=="+"){
                     for(j in 1:length(altSplit)){
                         if(nchar(ref)==1 & nchar(altSplit[j])==1){
-                            variant = c(variant,paste(transcript[i],':','g.',pos,':',ref,'>',altSplit[j],sep=""))
+                            variant = c(variant,paste(transcript[i],':g.',pos,':',ref,'>',altSplit[j],sep=""))
                         }else{
                             variant = c(variant,paste(transcript[i],':g.',pos,"_",pos+nchar(ref)-1,':delins',altSplit[j],sep=""))
                         }
