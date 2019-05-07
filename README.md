@@ -19,8 +19,8 @@ SPiP is a decisional tree running a cascade of bioinformatics tools. Briefly, SP
 
 To get SPiP from this repository, you can enter in the linux consoles:
 
-    git clone http://gitlab.baclesse.fr/LEMRAP/spip
-    cd ./spip
+    git clone https://github.com/raphaelleman/SPiP
+    cd ./SPiP
 
 SPiP needs also to install the Rcurl library, from the R console:
 
@@ -30,7 +30,7 @@ In the main to optimize the run of SPiP you can also install samtools. SPiP will
 
 ### Install Samtools
 
-    cd /path/to/spip/
+    cd /path/to/SPiP/
     wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
     tar xfvj samtools-1.9.tar.bz2
     cd ./samtools-1.9
@@ -56,7 +56,7 @@ you can get the different argument of SPiP by `Rscript /path/to/SPiPv0.2.r --hel
 
 An example of SPiP run with test file [testCrypt.txt](http://gitlab.baclesse.fr/LEMRAP/spip/blob/master/testCrypt.txt "tittle"):
 
-    cd /path/to/spip/
+    cd /path/to/SPiP/
     Rscript ./SPiPv0.2.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
 
 In this example SPiP will generate a text file "outputTest.txt" where the predictions will be save.
