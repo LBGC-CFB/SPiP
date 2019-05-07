@@ -25,6 +25,7 @@ To get SPiP from this repository, you can enter in the linux consoles:
 SPiP needs also to install the Rcurl library, from the R console:
 
     install.packages(“Rcurl”)
+    install.packages(“parallel”)
 
 In the main to optimize the run of SPiP you can also install samtools. SPiP will use samtools to get the DNA sequences.
 
