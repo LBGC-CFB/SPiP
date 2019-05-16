@@ -82,8 +82,8 @@ dathg19$V18 = unlist(tmpResulthg19[2,])
 
 #save data
 message("Save data...")
-dataRefSeq = dathg38[,c("V3","V5","V6","V2","V12","V4","V7","V8","V12","V9","V17","V18")]
-names(dataRefSeq) = paste("V",c(1:12),sep="")
+dataRefSeq = dathg38[,c("V3","V5","V6","V2","V12","V4","V7","V8","V12","V9","V17","V18", "V13")]
+names(dataRefSeq) = paste("V",c(1:13),sep="")
 dataRefSeq$V1 = as.factor(dataRefSeq$V1)
 dataRefSeq$V3 = as.numeric(dataRefSeq$V3)
 dataRefSeq$V4 = as.factor(dataRefSeq$V4)
@@ -95,11 +95,11 @@ dataRefSeq$V9 = as.numeric(dataRefSeq$V9)
 dataRefSeq$V10 = as.numeric(dataRefSeq$V10)
 dataRefSeq$V11 = as.factor(dataRefSeq$V11)
 dataRefSeq$V12 = as.factor(dataRefSeq$V12)
-#dataRefSeq$V13 = as.factor(dataRefSeq$V13)
+dataRefSeq$V13 = as.factor(dataRefSeq$V13)
 save(dataRefSeq,file = paste(inputref,"/dataRefSeqhg38.RData",sep=""))
 
-dataRefSeq = dathg19[,c("V3","V5","V6","V2","V12","V4","V7","V8","V12","V9","V17","V18")]
-names(dataRefSeq) = paste("V",c(1:12),sep="")
+dataRefSeq = dathg19[,c("V3","V5","V6","V2","V12","V4","V7","V8","V12","V9","V17","V18", "V13")]
+names(dataRefSeq) = paste("V",c(1:13),sep="")
 dataRefSeq$V1 = as.factor(dataRefSeq$V1)
 dataRefSeq$V3 = as.numeric(dataRefSeq$V3)
 dataRefSeq$V4 = as.factor(dataRefSeq$V4)
@@ -111,5 +111,5 @@ dataRefSeq$V9 = as.numeric(dataRefSeq$V9)
 dataRefSeq$V10 = as.numeric(dataRefSeq$V10)
 dataRefSeq$V11 = as.factor(dataRefSeq$V11)
 dataRefSeq$V12 = as.factor(dataRefSeq$V12)
-#dataRefSeq$V13 = as.factor(dataRefSeq$V13)
+dataRefSeq$V13 = as.factor(dataRefSeq$V13)
 save(dataRefSeq,file = paste(inputref,"/dataRefSeqhg19.RData",sep=""))
