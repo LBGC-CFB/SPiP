@@ -519,6 +519,12 @@ convertcNomenIngNomen <- function(transcrit,posVar){
 		ExCDSstart=dataConvert$idEx[dataConvert$gStart<=gCDSstart & dataConvert$gEnd>=gCDSstart]
 		ExCDSend=dataConvert$idEx[dataConvert$gStart<=gCDSend & dataConvert$gEnd>=gCDSend ]
 
+		if(length(ExCDSstart)==0){
+			ExCDSstart = 1
+		}
+		if(length(ExCDSend)==0){
+			ExCDSstart = length(tailleExon )
+		}
 		dataConvert$cStart[dataConvert$idEx==ExCDSstart]=dataConvert$gStart[dataConvert$idEx==ExCDSstart]-gCDSstart -1
 		dataConvert$cEnd[dataConvert$idEx==ExCDSstart]=dataConvert$gEnd[dataConvert$idEx==ExCDSstart]-gCDSstart
 
@@ -609,6 +615,12 @@ convertcNomenIngNomen <- function(transcrit,posVar){
 
 		ExCDSstart=dataConvert$idEx[dataConvert$gStart>=gCDSstart & dataConvert$gEnd<=gCDSstart]
 		ExCDSend=dataConvert$idEx[dataConvert$gStart>=gCDSend & dataConvert$gEnd<=gCDSend ]
+ 		if(length(ExCDSstart)==0){
+			ExCDSstart = 1
+		}
+		if(length(ExCDSend)==0){
+			ExCDSstart = length(tailleExon )
+		}
 
 		dataConvert$cStart[dataConvert$idEx==ExCDSstart]=gCDSstart-dataConvert$gStart[dataConvert$idEx==ExCDSstart]
 		dataConvert$cEnd[dataConvert$idEx==ExCDSstart]=gCDSstart-dataConvert$gEnd[dataConvert$idEx==ExCDSstart]+1
@@ -1929,7 +1941,6 @@ output<-file(outputFile,"w")
 fileFormat = tolower(substr(basename(inputFile),nchar(basename(inputFile))-2,nchar(basename(inputFile))))
 
 writeLines(headerHelp,con = output,sep="\n")
-
 
 message(paste(s+1,s+maxLines,sep=" to "))
 rawInput<-readLines(input, n=maxLines)
