@@ -3,8 +3,11 @@
 ########
 options(stringsAsFactors=FALSE)
 message("Use the URL: http://hgdownload.cse.ucsc.edu/goldenPath/")
-wd_R=getwd()
-inputref = paste(wd_R, "/RefFiles",sep="")
+argsFull <- commandArgs()
+Rscript <- argsFull[1]
+
+inputref=dirname(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=="--file="])))
+
 #format of refseq: bin, transcrit, chr, strand, gstart, gend, CDSstart, CDSend, nEx, posExStart, posCum, Score (0), geneName, Annot1, Annot2, frame
 
 #open connection
