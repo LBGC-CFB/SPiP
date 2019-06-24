@@ -134,23 +134,3 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 **-l, --maxLines** N
 
 + Number of lines read in each time [default= 1000]
-
-**-c, --SPiCE** Yes
-
-+ Use of consensus prediction (SPiCE) (Yes/No) [default= Yes]
-
-**-m, --MES** Yes
-
-+ Use of MES prediction in {-20; -13} (Yes/No) [default= Yes]
-
-**-b, --BPP** Yes
-
-+ Use of Branch point prediction (Yes/No) [default= Yes]
-
-**-d, --Cryptic** Yes
-
-+ Use of de Novo/cryptic prediction (Yes/No) [default= Yes]
-
-**-e, --ESR Yes**
-
-+ Use of ESR prediction (Yes/No) [default= Yes]
