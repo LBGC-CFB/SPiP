@@ -17,7 +17,7 @@ SPiP is a decisional tree running a cascade of bioinformatics tools. Briefly, SP
 
 ---
 
-* SPiPv0.2: the SPiP scripts
+* SPiPv0.3: the SPiP scripts
 * testCrypt.txt: an example of input data in text format
 * testVar.vcf: an example of input data in vcf format
 * *RefFiles*: folder where are the reference files use by SPiP
@@ -27,36 +27,47 @@ SPiP is a decisional tree running a cascade of bioinformatics tools. Briefly, SP
 ---
 
 To get SPiP from this repository, you can enter in the linux consoles:
+```shell
+git clone https://github.com/raphaelleman/SPiP
+cd ./SPiP
+```
 
-    git clone https://github.com/raphaelleman/SPiP
-    cd ./SPiP
+SPiP needs also to install 2 libraries, from the R console:
+```R
+install.packages(“RCurl”)
+install.packages(“parallel”)
+```
 
-SPiP needs also to install the Rcurl library, from the R console:
-
-    install.packages(“Rcurl”)
-    install.packages(“parallel”)
-
-In the main to optimize the run of SPiP you can also install samtools. SPiP will use samtools to get the DNA sequences.
+For some version of Linux the installation of RCurl package requiers instalation of libcurl dependencies:
+```shell
+sudo apt-get update
+sudo apt-get install libcurl4-openssl-dev
+sudo apt-get install libcurl4-gnutls-dev
+sudo apt-get install libcurl4-nss-dev
+```
 
 ### Install Samtools<a id="3"></a>
+In the main to optimize the run of SPiP you can also install samtools. SPiP will use samtools to get the DNA sequences.
 
-    cd /path/to/SPiP/
-    wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
-    tar xfvj samtools-1.9.tar.bz2
-    cd ./samtools-1.9
-    ./configure --prefix=/where/to/install
-    make
-    make install
-
+```shell
+cd /path/to/SPiP/
+wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
+tar xfvj samtools-1.9.tar.bz2
+cd ./samtools-1.9
+./configure --prefix=/where/to/install
+make
+make install
+```
 For more information, please see the [samtools manual](http://www.htslib.org/doc/samtools.html "tittle")
 
 ### Load the human genome<a id="4"></a>
 
 Here we use the [GENCODE](https://www.gencodegenes.org/ "tittle") database, with the hg19 example:
-
-    wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_29/GRCh37_mapping/GRCh37.primary_assembly.genome.fa.gz -O genomehg19.fa.gz
-    gunzip genomehg19.fa.gz
-    /path/to/samtools faidx genomehg19.fa
+```shell
+wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_29/GRCh37_mapping/GRCh37.primary_assembly.genome.fa.gz -O genomehg19.fa.gz
+gunzip genomehg19.fa.gz
+/path/to/samtools faidx genomehg19.fa
+```
 
 ## Run SPiP<a id="5"></a>
 
@@ -66,8 +77,10 @@ you can get the different argument of SPiP by `Rscript /path/to/SPiPv0.2.r --hel
 
 An example of SPiP run with test file [testCrypt.txt](http://gitlab.baclesse.fr/LEMRAP/spip/blob/master/testCrypt.txt "tittle"):
 
-    cd /path/to/SPiP/
-    Rscript ./SPiPv0.2.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
+```shell
+cd /path/to/SPiP/
+Rscript ./SPiPv0.2.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
+```
 
 In this example SPiP will generate a text file "outputTest.txt" where the predictions will be save. The scheme of this output is:
 
