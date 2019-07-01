@@ -17,7 +17,7 @@ SPiP is a decisional tree running a cascade of bioinformatics tools. Briefly, SP
 
 ---
 
-* SPiPv0.3: the SPiP scripts
+* SPiPv0.4: the SPiP scripts
 * testCrypt.txt: an example of input data in text format
 * testVar.vcf: an example of input data in vcf format
 * *RefFiles*: folder where are the reference files use by SPiP
@@ -73,13 +73,13 @@ gunzip genomehg19.fa.gz
 
 ---
 
-you can get the different argument of SPiP by `Rscript /path/to/SPiPv0.2.r --help`
+you can get the different argument of SPiP by `Rscript /path/to/SPiPv0.4.r --help`
 
 An example of SPiP run with test file [testCrypt.txt](http://gitlab.baclesse.fr/LEMRAP/spip/blob/master/testCrypt.txt "tittle"):
 
 ```shell
 cd /path/to/SPiP/
-Rscript ./SPiPv0.2.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
+Rscript ./SPiPv0.4.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
 ```
 
 In this example SPiP will generate a text file "outputTest.txt" where the predictions will be save. The scheme of this output is:
@@ -147,3 +147,50 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 **-l, --maxLines** N
 
 + Number of lines read in each time [default= 1000]
+
+**--header**
+
++ Add the meta-column information to the file, to explain the significance of each SPiP column
+
+
+    ### SPiP output v0.4
+    ## varID    The name of variant (transcript:mutation)
+    ## Interpretation   Overall prediction of SPiP
+    ##    Alter by SPiCE    Alteration of consensus splice site predicted by SPiCE (corresponding to classes "medium" and "high" of SPiCE)
+    ##    Alter by MES (Poly TC)    Alteration of polypyrimidine tract by MES (threshold of -15 %)
+    ##    Alter BP  Alteration of branch point predicted by BPP (variant in 4-mer of BP)
+    ##    Alter ESR     Alteration of ESR motifs predicted by deltaESRseq (threshold of 1.25)
+    ##    Alter by create Cryptic/Exon  Creation of new splice site
+    ##    NTR   Nothing To Report, no alteration predicted
+    ## InterConfident   Probability of splicing alteration with CI_95%, estimated from mutations 65,955 mutations
+    ## chr  Chromosome number
+    ## strand   Strand of the transcripts
+    ## gNomen   Genomic coordinates
+    ## seqPhysio    (A, C, G, T)-sequence before the mutation
+    ## seqMutated   (A, C, G, T)-sequence after the mutation
+    ## NearestSS    Nearest splice site to the mutation
+    ## distSS   Distance between the splice site and the mutation
+    ## RegType  Type of region in the transcript, Exon/Intron
+    ##    Cons  Consensus splice site (5': -3; +6 / 3': -12; +2)
+    ##    PolyTC    Polypyrimidine tract (-20; -13)
+    ##    BP    Branch point area (-44; -18)
+    ## SPiCEproba   SPiCE score
+    ## SPiCEinter_2thr  Classes of SPiCE (low, medium, high)
+    ## deltaMES     Delta score of MES
+    ## mutInPBarea  Mutation in branch point
+    ## deltaESRscore    Score of deltaESRscore
+    ## posCryptMut  Postion of mutated cryptic splice site
+    ## sstypeCryptMut   Splice type of mutated cryptic splice site
+    ## probaCryptMut    Score of mutated cryptic splice site
+    ## classProbaCryptMut   Use of mutated cryptic splice site (Yes/No)
+    ## nearestSStoCrypt     Splice type of the nearest natural splice site to the mutated cryptic site
+    ## nearestPosSStoCrypt  Position of the nearest natural splice site to the mutated cryptic site
+    ## nearestDistSStoCrypt     Distance of the nearest natural splice site to the mutated cryptic site
+    ## posCryptWT   Postion of wild-type cryptic splice site
+    ## probaCryptWT     Score of wild-type cryptic splice site
+    ## classProbaCryptWT    Use of wild-type cryptic splice site (Yes/No)
+    ## posSSPhysio  Position of the natural splice site (same splice type of cryptic site)
+    ## probaSSPhysio    Score of the natural splice site (same splice type of cryptic site)
+    ## classProbaSSPhysio   Use of the natural splice site (same splice type of cryptic site) (Yes/No)
+    ## probaSSPhysioMut     Score of the natural splice site (same splice type of cryptic site) after the mutation
+    ## classProbaSSPhysioMut    Use of the natural splice site (same splice type of cryptic site) after the mutation (Yes/No)
