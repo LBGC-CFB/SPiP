@@ -152,7 +152,7 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 
 + Add the meta-column information to the file, to explain the significance of each SPiP column
 
-
+```R
     ### SPiP output v0.4
     ## varID    The name of variant (transcript:mutation)
     ## Interpretation   Overall prediction of SPiP
@@ -194,3 +194,4 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
     ## classProbaSSPhysio   Use of the natural splice site (same splice type of cryptic site) (Yes/No)
     ## probaSSPhysioMut     Score of the natural splice site (same splice type of cryptic site) after the mutation
     ## classProbaSSPhysioMut    Use of the natural splice site (same splice type of cryptic site) after the mutation (Yes/No)
+```
