@@ -1949,6 +1949,7 @@ flush(output)
 close(output)
 
 message(paste(s+1,s+maxLines,sep=" to "))
+data=NULL
 rawInput<-readLines(input, n=maxLines)
 if(length(rawInput)==0) stop()
 message(paste(sub("CET",":",Sys.time(),fixed=T),"Read lines..."))
@@ -1964,14 +1965,19 @@ if(fileFormat=="txt"){
         stop()
     }
 }else if(fileFormat=="vcf"){
-    rawInput = rawInput[-grep("#",rawInput,fixed=TRUE)]
-    columNames <- c("#CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO", "varID")
-    message(paste(sub("CET",":",Sys.time(),fixed=T),"Align VCF mutation on transcripts..."))
-    total <- length(rawInput)
-    pb <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
-    tmpVCF = unlist(mcmapply(FUN = readVCF,rawInput,1:length(rawInput), mc.cores = threads, mc.preschedule = TRUE))
-    data = data.frame(varID = as.character(tmpVCF))
-    rawInput = paste(names(tmpVCF),data[,'varID'],sep="\t")
+    if(as.numeric(regexpr("#",rawInput[length(rawInput)]))<0){
+        mHeader = rawInput[grep("#",rawInput,fixed=TRUE)]
+        mHeader = mHeader[length(mHeader)]
+        columNames <- c(mHeader,"varID")
+        message(paste(sub("CET",":",Sys.time(),fixed=T),"Align VCF mutation on transcripts..."))
+        rawInput = rawInput[-grep("#",rawInput,fixed=TRUE)]
+        total <- length(rawInput)
+        pb <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
+        tmpVCF = unlist(mcmapply(FUN = readVCF,rawInput,1:length(rawInput), mc.cores = threads, mc.preschedule = TRUE))
+        data = data.frame(varID = as.character(tmpVCF))
+        rawInput = paste(names(tmpVCF),data[,'varID'],sep="\t")
+    }
+
 }else{
     message("###########################")
     message("#Incorrect format of input, please try again with a txt or vcf file")
@@ -1979,30 +1985,31 @@ if(fileFormat=="txt"){
     print_help(opt_parser)
     stop()
 }
+if(!is.null(data)){
+    message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
+    total <- nrow(data)
+    pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
+    rawResult = mcmapply(FUN = SPiP, data[,"varID"],1:nrow(data), mc.cores = threads, mc.preschedule = TRUE)
+    message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
 
-message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
-total <- nrow(data)
-pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
-rawResult = mcmapply(FUN = SPiP, data[,"varID"],1:nrow(data), mc.cores = threads, mc.preschedule = TRUE)
+    colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "seqPhysio", "seqMutated", "NearestSS",
+        "distSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
+        "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
+        "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
 
-message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
+    output<-file(outputFile,"a")
+    writeLines(c(colNames,paste(rawInput,rawResult,sep="\t")),con = output,sep="\n")
+    flush(output)
+    close(output)
 
-colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "seqPhysio", "seqMutated", "NearestSS",
-    "distSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
-    "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
-    "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
-
-output<-file(outputFile,"a")
-writeLines(c(colNames,paste(rawInput,rawResult,sep="\t")),con = output,sep="\n")
+}
 
 s<-s+maxLines
-
-flush(output)
-close(output)
 
 # Remaining iteration
 output<-file(outputFile,"a")
 while(T){
+    data=NULL
     message(paste(s+1,s+maxLines,sep=" to "))
     rawInput<-readLines(input, n=maxLines)
     if(length(rawInput)==0) break
@@ -2011,24 +2018,42 @@ while(T){
         data = splitRawToTable(rawInput,head=FALSE)
         colnames(data) <- columNames
     }else if(fileFormat=="vcf"){
-        if(as.numeric(regexpr("#",rawInput[1]))>0){
-            rawInput = rawInput[-grep("#",rawInput,fixed=TRUE)]
+        if(as.numeric(regexpr("#",rawInput[length(rawInput)]))<0){
+            printHead=FALSE
+            if(as.numeric(regexpr("#",rawInput[1]))>0){
+                printHead=TRUE
+                mHeader = rawInput[grep("#",rawInput,fixed=TRUE)]
+                mHeader = mHeader[length(mHeader)]
+                columNames <- c(mHeader,"varID")
+                rawInput = rawInput[-grep("#",rawInput,fixed=TRUE)]
+            }
+            message(paste(sub("CET",":",Sys.time(),fixed=T),"Align VCF mutation on transcripts..."))
+            total <- length(rawInput)
+            pb <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
+            tmpVCF = unlist(mcmapply(FUN = readVCF,rawInput,1:length(rawInput), mc.cores = threads, mc.preschedule = TRUE))
+            data = data.frame(varID = as.character(tmpVCF))
+            rawInput = paste(names(tmpVCF),data[,'varID'],sep="\t")
         }
-        message(paste(sub("CET",":",Sys.time(),fixed=T),"Align VCF mutation on transcripts..."))
-        total <- length(rawInput)
-        pb <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
-        tmpVCF = unlist(mcmapply(FUN = readVCF,rawInput,1:length(rawInput), mc.cores = threads, mc.preschedule = TRUE))
-        data = data.frame(varID = as.character(tmpVCF))
-        rawInput = paste(names(tmpVCF),data[,'varID'],sep="\t")
     }
-    message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
-    total <- nrow(data)
-    pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
-    rawResult = mcmapply(FUN = SPiP, data[,"varID"],1:nrow(data), mc.cores = threads, mc.preschedule = TRUE)
+    if(!is.null(data)){
+        message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
+        total <- nrow(data)
+        pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
+        rawResult = mcmapply(FUN = SPiP, data[,"varID"],1:nrow(data), mc.cores = threads, mc.preschedule = TRUE)
 
-    message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
-    writeLines(paste(rawInput,rawResult,sep="\t"), con = output, sep = "\n")
-    flush(output)
+        message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
+        if(printHead){
+            colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "seqPhysio", "seqMutated", "NearestSS",
+                "distSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
+                "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
+                "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
+                writeLines(c(colNames,paste(rawInput,rawResult,sep="\t")),con = output,sep="\n")
+                flush(output)
+        }else{
+                writeLines(paste(rawInput,rawResult,sep="\t"), con = output, sep = "\n")
+                flush(output)
+        }
+    }
     s<-s+maxLines
 }
 
