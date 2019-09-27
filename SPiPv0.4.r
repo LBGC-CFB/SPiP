@@ -1579,124 +1579,132 @@ getPredConfident <- function(interpretFinal, RegType, distSS, SstypePhy){
 	if (length(grep("Exon",RegType ))>0){
         if(SstypePhy=="acceptor"){
 		    if(length(grep("Alter by SPiCE",interpretFinal ))>0){
-                probaInter = "42.86 % [21.69 % ; 64.03 %]"
+                probaInter = "47.37 % [24.92 % ; 69.82 %]"
             }else if (length(grep("Alter ESR",interpretFinal ))>0){
-                probaInter = "20.18 % [16.48 % ; 23.88 %]"
+                probaInter = "27.33 % [22.54 % ; 32.12 %]"
             }else if (length(grep("Alter by create Cryptic",interpretFinal ))>0){
                 if(abs(distSS[1])<=120){
-                    probaInter = "03.60 % [1.54 % ; 8.14 %]"
+                    probaInter = "06.25 % [02.69 % ; 13.81 %]"
                 }else{
-                    probaInter = "02.38 % [1.21 % ; 4.63 %]"
+                    probaInter = "04.17 % [02.13 % ; 08.01 %]"
                 }
             }else if (length(grep("de Novo",interpretFinal ))>0){
                 if(abs(distSS[1])<=120){
-                    probaInter = "12.20 % [2.18 % ; 22.22 %]"
+                    probaInter = "23.81 % [05.59 % ; 42.03 %]"
                 }else{
-                    probaInter = "02.70 % [0.75 % ; 9.33 %]"
+                    probaInter = "03.39 % [00.94 % ; 11.54 %]"
                 }
             }else{
                 if (length(grep("Cons",RegType ))>0){
-                    probaInter = "07.41 % [2.05 % ; 23.37 %]"
+                    probaInter = "09.09 % [02.53 % ; 27.81 %]"
                 }else if (abs(distSS[1])<=120){
-                    probaInter = "04.63 % [3.35 % ; 6.37 %]"
+                    probaInter = "06.33 % [04.59 % ; 08.67 %]"
                 }else{
-                    probaInter = "00.66 % [0.34 % ; 1.30 %]"
+                    probaInter = "01.09 % [00.55 % ; 02.13 %]"
                 }
             }
         }else{
             if(length(grep("Alter by SPiCE",interpretFinal ))>0){
-                probaInter = "78.83 % [71.99 % ; 85.67 %]"
+                probaInter = "85.71 % [76.90 % ; 91.82 %]"
             }else if (length(grep("Alter ESR",interpretFinal ))>0){
-                probaInter = "21.69 % [17.83 % ; 25.55 %]"
+                probaInter = "34.05 % [28.49 % ; 39.61 %]"
             }else if (length(grep("Alter by create Cryptic",interpretFinal ))>0){
                 if(abs(distSS[1])<=120){
-                    probaInter = "06.96 % [3.57 % ; 13.13 %]"
+                    probaInter = "09.88 % [05.09 % ; 18.29 %]"
                 }else{
-                    probaInter = "02.38 % [1.21 % ; 4.63 %]"
+                    probaInter = "04.17 % [02.13 % ; 08.01 %]"
                 }
             }else if (length(grep("de Novo",interpretFinal ))>0){
                 if(abs(distSS[1])<=120){
-                    probaInter = "15.00 % [3.93% ; 26.07 %]"
+                    probaInter = "27.27 % [08.66% ; 45.88 %]"
                 }else{
-                    probaInter = "02.70 % [0.75 % ; 9.33 %]"
+                    probaInter = "03.39 % [00.94 % ; 11.54 %]"
                 }
             }else{
                 if (length(grep("Cons",RegType ))>0){
-                    probaInter = "06.45 % [1.78 % ; 20.72 %]"
+                    probaInter = "07.14 % [01.98 % ; 22.64 %]"
                 }else if (abs(distSS[1])<=120){
-                    probaInter = "03.86 % [2.71 % ; 5.49 %]"
+                    probaInter = "05.35 % [03.76 % ; 07.58 %]"
                 }else{
-                    probaInter = "00.66 % [0.34 % ; 1.30 %]"
+                    probaInter = "01.09 % [00.55 % ; 02.13 %]"
                 }
             }
         }
     }else{
         if(SstypePhy=="acceptor"){
             if(length(grep("Alter by SPiCE",interpretFinal ))>0){
-                probaInter = "86.05 % [82.39 % ; 89.71 %]"
+                if(distSS[1]>=(-2)){
+                    probaInter = "96.15 % [92.60 % ; 98.04 %]"
+                }else{
+                    probaInter = "69.57 % [61.89 % ; 77.25 %]"
+                }
             }else if (length(grep("Alter by MES",interpretFinal ))>0){
-                probaInter = "59.70 % [47.95 % ; 71.45 %]"
+                probaInter = "83.33 % [72.79 % ; 93.87 %]"
             }else if (length(grep("Alter BP",interpretFinal ))>0){
-                probaInter = "36.17 % [26.46 % - 45.88 %]"
+                probaInter = "48.57 % [36.86 % ; 60.28 %]"
             }else if(length(grep("Alter by create Cryptic",interpretFinal ))>0){
                 if(length(grep("Cons",RegType ))>0 | length(grep("PolyTC",RegType))>0 | length(grep("BP",RegType))>0){
                     probaInter = "No available"
                 }else{
-                    probaInter = "01.61 % [1.04 % ; 2.50 %]"
+                    probaInter = "02.84 % [01.11 % ; 07.07 %]"
                 }
             }else if(length(grep("Alter by create Exon",interpretFinal ))>0){
-                probaInter = "00.37 % [0.22 % ; 0.60 %]"
+                probaInter = "00.50 % [00.31 % ; 00.83 %]"
             }else if (length(grep("de Novo Cryptic",interpretFinal ))>0){
                 if(length(grep("Cons",RegType ))>0){
                     probaInter = "No available"
                 }else if (length(grep("PolyTC",RegType))>0){
-                    probaInter = "50.00 % [23.81 % ; 76.19 %]"
+                    probaInter = "63.64 % [35.21 % ; 92.07 %]"
                 }else if (length(grep("BP",RegType))>0){
-                    probaInter = "10.53 % [0.00 % ; 24.33 %]"
+                    probaInter = "18.18 % [00.00 % ; 40.97 %]"
                 }else{
-                    probaInter = "06.94 % [3.00 % ; 15.24 %]"
+                    probaInter = "09.62 % [04.17 % ; 20.61 %]"
                 }
             }else if (length(grep("de Novo Exon",interpretFinal ))>0){
-                probaInter = "01.61 % [1.04 % ; 2.50 %]"
+                probaInter = "02.26 % [01.45 % ; 03.51%]"
     		}else{
                 if(length(grep("Cons",RegType ))>0){
-                    probaInter = "00.79 % [0.14 % ; 4.36 %]"
+                    probaInter = "00.93 % [00.17 % ; 05.11 %]"
                 }else if (length(grep("PolyTC",RegType))>0){
-                    probaInter = "2.97 % [1.37 % ; 6.33 %]"
+                    probaInter = "06.90 % [03.20 % ; 14.24 %]"
                 }else if (length(grep("BP",RegType))>0){
-                    probaInter = "0.87 % [0.34 % ; 2.22 %]"
+                    probaInter = "01.95 % [00.76 % ; 04.90 %]"
                 }else if (abs(distSS[1])<=150){
-                    probaInter = "00.90 % [0.01 % ; 0.51 %]"
+                    probaInter = "00.13 % [00.02 % ; 00.74 %]"
                 }else{
-                    probaInter = "00.04 % [0.02 % ; 0.08 %]"
+                    probaInter = "00.06 % [00.03 % ; 00.11 %]"
                 }
             }
     	}else{
     		if(length(grep("Alter by SPiCE",interpretFinal ))>0){
-                probaInter = "96.12 % [93.70 % ; 97.64 %]"
+                if(distSS[1]<=2){
+                    probaInter = "98.42 % [96.00 % ; 99.38 %]"
+                }else{
+                    probaInter = "95.35 % [90.23 % ; 97.85 %]"
+                }
     		}else if(length(grep("Alter by create Cryptic",interpretFinal ))>0){
                 if(length(grep("Cons",RegType ))>0){
                     probaInter = "No available"
                 }else{
-                    probaInter = "01.98 % [0.96 % ; 4.02 %]"
+                    probaInter = "03.63 % [01.76 % ; 07.29 %]"
                 }
     		}else if(length(grep("Alter by create Exon",interpretFinal ))>0){
-    			probaInter = "00.21 % [0.12 % ; 0.40 %]"
+    			probaInter = "00.30 % [00.16 % ; 00.56 %]"
             }else if (length(grep("de Novo Cryptic",interpretFinal ))>0){
                 if(length(grep("Cons",RegType ))>0){
                     probaInter = "No available"
                 }else{
-                    probaInter = "09.92 % [5.76 % ; 16.54 %]"
+                    probaInter = "16.67 % [08.06 % ; 25.28 %]"
                 }
             }else if (length(grep("de Novo Exon",interpretFinal ))>0){
-    			probaInter = "02.23 % [1.54 % ; 3.22 %]"
+    			probaInter = "03.31 % [02.29 % ; 04.77 %]"
     		}else{
         		if(length(grep("Cons",RegType ))>0){
-                    probaInter = "00.00 % [0.00 % ; 11.36 %]"
+                    probaInter = "00.00 % [00.00 % ; 25.88 %]"
                 }else if(abs(distSS[1])<=150){
-                    probaInter = "00.16 % [0.05 % ; 0.47 %]"
+                    probaInter = "00.25 % [00.08 % ; 00.74 %]"
                 }else{
-                    probaInter = "00.03 % [0.01 % ; 0.05 %]"
+                    probaInter = "00.04 % [00.02 % ; 00.08%]"
                 }
             }
         }
@@ -1997,7 +2005,7 @@ if(!is.null(data)){
         "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
         "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
 
-    output<-file(outputFile,"a")
+    if(printHead){output<-file(outputFile,"a")}else{output<-file(outputFile,"w")}
     writeLines(c(colNames,paste(rawInput,rawResult,sep="\t")),con = output,sep="\n")
     flush(output)
     close(output)
@@ -2042,17 +2050,8 @@ while(T){
         rawResult = mcmapply(FUN = SPiP, data[,"varID"],1:nrow(data), mc.cores = threads, mc.preschedule = TRUE)
 
         message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
-        if(printHead){
-            colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "seqPhysio", "seqMutated", "NearestSS",
-                "distSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
-                "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
-                "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
-                writeLines(c(colNames,paste(rawInput,rawResult,sep="\t")),con = output,sep="\n")
-                flush(output)
-        }else{
-                writeLines(paste(rawInput,rawResult,sep="\t"), con = output, sep = "\n")
-                flush(output)
-        }
+        writeLines(paste(rawInput,rawResult,sep="\t"), con = output, sep = "\n")
+        flush(output)
     }
     s<-s+maxLines
 }
