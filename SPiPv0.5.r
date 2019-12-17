@@ -1755,10 +1755,8 @@ getOutput <- function(){
 		mutInPBareaBPP = getBPParea(varPos,transcript,genome)
 	}
 
-	varType <<- varType
 	tmpTableSeqNoPhyMut = tmpTableSeq[tmpTableSeq$Physio!="Yes" & tmpTableSeq$seqType == "Mut",]
 
-	chr <- chr
 	strand <- sens
 	gNomen <- varPos[1]
 	NearestSS <- SstypePhy
@@ -1773,12 +1771,7 @@ getOutput <- function(){
 	}else{
 		print("erreur varpos")
 	}
-	RegType <- RegType
-	seqPhysio <- seqPhysio
-	seqMutated <- seqMutated
-	SPiCEproba <- SPiCEproba
-	SPiCEinter_2thr <- SPiCEinter_2thr
-	deltaMES <- deltaMES
+	gene <- as.character(dataRefSeq$V13[dataRefSeq$V4==transcript])
 	mutInPBarea <- mutInPBareaBPP
 	deltaESRscore <- ESRscore
 
@@ -1824,10 +1817,7 @@ getOutput <- function(){
 		if(nrow(tmpTableSeqPhyMut)>0){
 			probaSSPhysioMut <- tmpTableSeqPhyMut$proba[1]
 			classProbaSSPhysioMut <- tmpTableSeqPhyMut$classProba[1]
-		}else{
-            probaSSPhysioMut <- 0
-            classProbaSSPhysioMut <- "No"
-        }
+		}
 	}else{
 		posCryptMut <- 0
 		sstypeCryptMut <- "No site"
@@ -1849,7 +1839,7 @@ getOutput <- function(){
 	Interpretation <- interpretation
 	InterConfident <- getPredConfident(interpretation, RegType, distSS, SstypePhy)
 
-    result <<- c(Interpretation, InterConfident, chr, strand, gNomen, seqPhysio, seqMutated, NearestSS, DistSS, RegType,
+    result <<- c(Interpretation, InterConfident, chr, strand, gNomen, varType, ntChange, transcript, gene, NearestSS, DistSS, RegType, seqPhysio, seqMutated,
         SPiCEproba, SPiCEinter_2thr, deltaMES, mutInPBarea, deltaESRscore, posCryptMut, sstypeCryptMut, probaCryptMut,
         classProbaCryptMut, nearestSStoCrypt, nearestPosSStoCrypt, nearestDistSStoCrypt, posCryptWT, probaCryptWT,
         classProbaCryptWT, posSSPhysio, probaSSPhysio, classProbaSSPhysio, probaSSPhysioMut, classProbaSSPhysioMut)
@@ -2000,9 +1990,10 @@ if(!is.null(data)){
     rawResult = mcmapply(FUN = SPiP, data[,"varID"],1:nrow(data), mc.cores = threads, mc.preschedule = TRUE)
     message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
 
-    colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "seqPhysio", "seqMutated", "NearestSS",
-        "distSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
-        "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
+    colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "varType", "ntChange",
+        "transcript", "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated",
+        "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut",
+        "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
         "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
 
     if(printHead){output<-file(outputFile,"a")}else{output<-file(outputFile,"w")}
