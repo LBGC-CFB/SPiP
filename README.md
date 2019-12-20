@@ -1,5 +1,5 @@
 # SPiP, **S**plicing **P**ipeline **P**rediction
-![SPiP logo](https://github.com/raphaelleman/SPiP/tree/master/RefFiles/logoPipeline.gif)
+![SPiP logo](https://github.com/raphaelleman/SPiP/blob/master/RefFiles/logoPipeline.gif)
 
 ---
 
@@ -18,7 +18,7 @@ SPiP is a decisional tree running a cascade of bioinformatics tools. Briefly, SP
 
 ---
 
-* SPiPv0.4: the SPiP scripts
+* SPiPv0.5: the SPiP scripts
 * testCrypt.txt: an example of input data in text format
 * testVar.vcf: an example of input data in vcf format
 * *RefFiles*: folder where are the reference files use by SPiP
@@ -74,13 +74,13 @@ gunzip genomehg19.fa.gz
 
 ---
 
-you can get the different argument of SPiP by `Rscript /path/to/SPiPv0.4.r --help`
+you can get the different argument of SPiP by `Rscript /path/to/SPiPv0.5.r --help`
 
 An example of SPiP run with test file [testCrypt.txt](http://gitlab.baclesse.fr/LEMRAP/spip/blob/master/testCrypt.txt "tittle"):
 
 ```shell
 cd /path/to/SPiP/
-Rscript ./SPiPv0.4.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
+Rscript ./SPiPv0.5.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
 ```
 
 In this example SPiP will generate a text file "outputTest.txt" where the predictions will be save. The scheme of this output is:
@@ -154,7 +154,7 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 + Add the meta-column information to the file, to explain the significance of each SPiP column
 
 ```R
-    ### SPiP output v0.4
+    ### SPiP output v0.5
     ## varID    The name of variant (transcript:mutation)
     ## Interpretation   Overall prediction of SPiP
     ##    Alter by SPiCE    Alteration of consensus splice site predicted by SPiCE (corresponding to classes "medium" and "high" of SPiCE)
