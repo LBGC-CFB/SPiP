@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
 
-headerHelp = c("### SPiP output v0.5",
+headerHelp = c("### SPiP output v0.4",
                 "## varID \tThe name of variant (transcript:mutation)",
                 "## Interpretation \tOverall prediction of SPiP",
                 "##    Alter by SPiCE \tAlteration of consensus splice site predicted by SPiCE (corresponding to classes \"medium\" and \"high\" of SPiCE)",
                 "##    Alter by MES (Poly TC) \tAlteration of polypyrimidine tract by MES (threshold of -15 %)",
                 "##    Alter BP \tAlteration of branch point predicted by BPP (variant in 4-mer of BP)",
-                "##    Alter ESR \tAlteration of ESR motifs predicted by deltaESRseq (threshold of 1.10)",
+                "##    Alter ESR \tAlteration of ESR motifs predicted by deltaESRseq (threshold of 1.25)",
                 "##    Alter by create Cryptic/Exon \tCreation of new splice site",
                 "##    NTR \tNothing To Report, no alteration predicted",
                 "## InterConfident \tProbability of splicing alteration with CI_95%, estimated from mutations 65,955 mutations",
@@ -71,7 +71,7 @@ maxLines = 1000
 printHead = FALSE
 
 #SPiP arguments
-helpMessage="Usage: SPiPv0.5.r\n
+helpMessage="Usage: SPiPv0.4.r\n
     Mandatory \n
         -I, --input /path/to/inputFile\t\tlist of variants file (.txt or .vcf)
         -O, --output /path/to/outputFile\t\tName of ouput file (.txt)\n
@@ -85,7 +85,7 @@ helpMessage="Usage: SPiPv0.5.r\n
     Other options\n
         --header \t\tPrint meta-header info
     -h, --help\t\tPrint this help message and exit\n
-   You could : Rscript SPiPv0.5.r -I ./testCrypt.txt -O ./outTestCrypt.txt"
+   You could : Rscript SPiPv0.4.r -I ./testCrypt.txt -O ./outTestCrypt.txt"
 
 #get script argument
 argsFull <- commandArgs()
@@ -1755,8 +1755,10 @@ getOutput <- function(){
 		mutInPBareaBPP = getBPParea(varPos,transcript,genome)
 	}
 
+	varType <<- varType
 	tmpTableSeqNoPhyMut = tmpTableSeq[tmpTableSeq$Physio!="Yes" & tmpTableSeq$seqType == "Mut",]
 
+	chr <- chr
 	strand <- sens
 	gNomen <- varPos[1]
 	NearestSS <- SstypePhy
@@ -1771,7 +1773,12 @@ getOutput <- function(){
 	}else{
 		print("erreur varpos")
 	}
-	gene <- as.character(dataRefSeq$V13[dataRefSeq$V4==transcript])
+	RegType <- RegType
+	seqPhysio <- seqPhysio
+	seqMutated <- seqMutated
+	SPiCEproba <- SPiCEproba
+	SPiCEinter_2thr <- SPiCEinter_2thr
+	deltaMES <- deltaMES
 	mutInPBarea <- mutInPBareaBPP
 	deltaESRscore <- ESRscore
 
@@ -1817,7 +1824,10 @@ getOutput <- function(){
 		if(nrow(tmpTableSeqPhyMut)>0){
 			probaSSPhysioMut <- tmpTableSeqPhyMut$proba[1]
 			classProbaSSPhysioMut <- tmpTableSeqPhyMut$classProba[1]
-		}
+		}else{
+            probaSSPhysioMut <- 0
+            classProbaSSPhysioMut <- "No"
+        }
 	}else{
 		posCryptMut <- 0
 		sstypeCryptMut <- "No site"
@@ -1839,7 +1849,7 @@ getOutput <- function(){
 	Interpretation <- interpretation
 	InterConfident <- getPredConfident(interpretation, RegType, distSS, SstypePhy)
 
-    result <<- c(Interpretation, InterConfident, chr, strand, gNomen, varType, ntChange, transcript, gene, NearestSS, DistSS, RegType, seqPhysio, seqMutated,
+    result <<- c(Interpretation, InterConfident, chr, strand, gNomen, seqPhysio, seqMutated, NearestSS, DistSS, RegType,
         SPiCEproba, SPiCEinter_2thr, deltaMES, mutInPBarea, deltaESRscore, posCryptMut, sstypeCryptMut, probaCryptMut,
         classProbaCryptMut, nearestSStoCrypt, nearestPosSStoCrypt, nearestDistSStoCrypt, posCryptWT, probaCryptWT,
         classProbaCryptWT, posSSPhysio, probaSSPhysio, classProbaSSPhysio, probaSSPhysioMut, classProbaSSPhysioMut)
@@ -1990,10 +2000,9 @@ if(!is.null(data)){
     rawResult = mcmapply(FUN = SPiP, data[,"varID"],1:nrow(data), mc.cores = threads, mc.preschedule = TRUE)
     message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
 
-    colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "varType", "ntChange",
-        "transcript", "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated",
-        "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut",
-        "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
+    colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "seqPhysio", "seqMutated", "NearestSS",
+        "distSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
+        "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
         "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
 
     if(printHead){output<-file(outputFile,"a")}else{output<-file(outputFile,"w")}

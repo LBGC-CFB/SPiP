@@ -1,4 +1,5 @@
 # SPiP, **S**plicing **P**ipeline **P**rediction
+![SPiP logo](https://github.com/raphaelleman/SPiP/tree/master/RefFiles/logoPipeline.gif)
 
 ---
 
