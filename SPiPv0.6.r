@@ -481,6 +481,61 @@ getNearestPosCrypt <- function(sens, cryptPos ,posDon, posAcc){
 	}
 }
 
+getExonInfo <- function(transcrit,posVar){
+
+	sens = as.character(dataRefSeq[dataRefSeq$V4==transcrit,6])
+	posStart=dataRefSeq[dataRefSeq$V4==transcrit,2]
+	tailleExon = as.numeric(unlist(strsplit(as.character(dataRefSeq[dataRefSeq$V4==transcrit,11]),",")))
+	tailleCum=dataRefSeq[dataRefSeq$V4==transcrit,12]
+	tailleCum=strsplit(as.character(tailleCum),split=",")
+	tailleCum=as.numeric(unlist(tailleCum))
+
+	if(sens=="+"){
+
+		gCDSstart = dataRefSeq[dataRefSeq$V4==transcrit,7]
+		gCDSend = dataRefSeq[dataRefSeq$V4==transcrit,8]
+		posAcc = posStart+tailleCum + 1
+		posDon = posAcc+tailleExon - 1
+
+		dataConvert=data.frame(idEx=c(1:length(tailleExon )),lenEx=tailleExon,gStart=posAcc,gEnd=posDon)
+
+		if(nrow(dataConvert[dataConvert$gStart<=posVar & dataConvert$gEnd>=posVar,])>=1){
+			ExonInfo = paste("Exon ",
+					dataConvert$idEx[dataConvert$gStart<=posVar & dataConvert$gEnd>=posVar]," (",
+					dataConvert$lenEx[dataConvert$gStart<=posVar & dataConvert$gEnd>=posVar],")",
+					sep="")
+		}else{
+			ExonInfo = paste("Intron ",
+							dataConvert$idEx[which(dataConvert$gEnd>=posVar)[1]-1]," (",
+							abs(dataConvert$gEnd[which(dataConvert$gEnd>=posVar)[1]-1]-
+								dataConvert$gStart[which(dataConvert$gEnd>=posVar)[1]])-1,")",
+							sep="")
+		}
+	}else if(sens=="-"){
+
+		gCDSstart = dataRefSeq[dataRefSeq$V4==transcrit,8]
+		gCDSend = dataRefSeq[dataRefSeq$V4==transcrit,7]
+		posDon = posStart+tailleCum + 1
+		posAcc = posDon+tailleExon - 1
+
+		dataConvert=data.frame(idEx=c(length(tailleExon):1),lenEx=tailleExon,gStart=posAcc,gEnd=posDon)
+
+		if(nrow(dataConvert[dataConvert$gStart>=posVar & dataConvert$gEnd<=posVar,])>=1){
+			ExonInfo = paste("Exon ",
+					dataConvert$idEx[dataConvert$gStart>=posVar & dataConvert$gEnd<=posVar]," (",
+					dataConvert$lenEx[dataConvert$gStart>=posVar & dataConvert$gEnd<=posVar],")",
+					sep="")
+		}else{
+			ExonInfo = paste("Intron ",
+							dataConvert$idEx[which(dataConvert$gEnd>=posVar)[1]]," (",
+							abs(dataConvert$gEnd[which(dataConvert$gEnd>=posVar)[1]]-
+								dataConvert$gStart[which(dataConvert$gEnd>=posVar)[1]-1])-1,")",
+							sep="")
+		}
+	}
+	return(ExonInfo)
+}
+
 convertcNomenIngNomen <- function(transcrit,posVar){
 
 	sens = as.character(dataRefSeq[dataRefSeq$V4==transcrit,6])
@@ -1843,8 +1898,9 @@ getOutput <- function(){
 	interpretation <- getGlobaInterpretation(SPiCEinter_2thr, RegType, deltaMES, mutInPBareaBPP, classProbaCryptMut, classProbaCryptWT, distSS[1], ESRscore)
 	Interpretation <- interpretation
 	InterConfident <- getPredConfident(interpretation, RegType, distSS, SstypePhy)
+    ExonInfo <- getExonInfo(transcript,varPos[1])
 
-    result <<- c(Interpretation, InterConfident, chr, strand, gNomen, varType, ntChange, transcript, gene, NearestSS, DistSS, RegType, seqPhysio, seqMutated,
+    result <<- c(Interpretation, InterConfident, chr, strand, gNomen, varType, ntChange, ExonInfo, transcript, gene, NearestSS, DistSS, RegType, seqPhysio, seqMutated,
         SPiCEproba, SPiCEinter_2thr, deltaMES, mutInPBarea, deltaESRscore, posCryptMut, sstypeCryptMut, probaCryptMut,
         classProbaCryptMut, nearestSStoCrypt, nearestPosSStoCrypt, nearestDistSStoCrypt, posCryptWT, probaCryptWT,
         classProbaCryptWT, posSSPhysio, probaSSPhysio, classProbaSSPhysio, probaSSPhysioMut, classProbaSSPhysioMut)
@@ -1955,6 +2011,8 @@ message(paste(s+1,s+maxLines,sep=" to "))
 data=NULL
 rawInput<-readLines(input, n=maxLines)
 if(length(rawInput)==0) stop()
+rawInput<-rawInput[!nchar(rawInput)<3]
+
 message(paste(sub("CET",":",Sys.time(),fixed=T),"Read lines..."))
 if(fileFormat=="txt"){
     data = splitRawToTable(rawInput,head=TRUE)
@@ -2017,6 +2075,8 @@ while(T){
     message(paste(s+1,s+maxLines,sep=" to "))
     rawInput<-readLines(input, n=maxLines)
     if(length(rawInput)==0) break
+    rawInput<-rawInput[!nchar(rawInput)<3]
+
     message(paste(sub("CET",":",Sys.time(),fixed=T),"Read lines..."))
     if(fileFormat=="txt"){
         data = splitRawToTable(rawInput,head=FALSE)
