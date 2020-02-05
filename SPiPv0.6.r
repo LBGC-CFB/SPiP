@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-headerHelp = c("### SPiP output v0.5",
+headerHelp = c("### SPiP output v0.6",
                 "## varID \tThe name of variant (transcript:mutation)",
                 "## Interpretation \tOverall prediction of SPiP",
                 "##    Alter by SPiCE \tAlteration of consensus splice site predicted by SPiCE (corresponding to classes \"medium\" and \"high\" of SPiCE)",
@@ -12,6 +12,11 @@ headerHelp = c("### SPiP output v0.5",
                 "## InterConfident \tProbability of splicing alteration with CI_95%, estimated from mutations 65,955 mutations",
                 "## chr \tChromosome number",
                 "## strand \tStrand of the transcripts",
+                "## varType \tType of variant",
+                "## ntChange \tNucleotides variation",
+                "## ExonInfo \tNumber and size of Exon/Intron",
+                "## transcript \tTranscript (RefSeq)",
+                "## gene \tGene symbol (RefSeq)",
                 "## gNomen \tGenomic coordinates",
                 "## seqPhysio \t(A, C, G, T)-sequence before the mutation",
                 "## seqMutated \t(A, C, G, T)-sequence after the mutation",
@@ -71,7 +76,7 @@ maxLines = 1000
 printHead = FALSE
 
 #SPiP arguments
-helpMessage="Usage: SPiPv0.5.r\n
+helpMessage="Usage: SPiPv0.6.r\n
     Mandatory \n
         -I, --input /path/to/inputFile\t\tlist of variants file (.txt or .vcf)
         -O, --output /path/to/outputFile\t\tName of ouput file (.txt)\n
@@ -85,7 +90,7 @@ helpMessage="Usage: SPiPv0.5.r\n
     Other options\n
         --header \t\tPrint meta-header info
     -h, --help\t\tPrint this help message and exit\n
-   You could : Rscript SPiPv0.5.r -I ./testCrypt.txt -O ./outTestCrypt.txt"
+   You could : Rscript SPiPv0.6.r -I ./testCrypt.txt -O ./outTestCrypt.txt"
 
 #get script argument
 argsFull <- commandArgs()
@@ -1481,7 +1486,7 @@ getMutInfo <- function(mutInput){
 }
 
 getVariantInfo <- function(varID){
-	varID = as.character(varID)
+    varID = as.character(varID)
 	varDecomp=unlist(strsplit(varID,":"))
 	if(length(varDecomp)!=3 & length(varDecomp)!=2){
 		message("You must import variant as:Transcrit:position(:)nucleotidic change")
@@ -1899,7 +1904,6 @@ getOutput <- function(){
 	Interpretation <- interpretation
 	InterConfident <- getPredConfident(interpretation, RegType, distSS, SstypePhy)
     ExonInfo <- getExonInfo(transcript,varPos[1])
-
     result <<- c(Interpretation, InterConfident, chr, strand, gNomen, varType, ntChange, ExonInfo, transcript, gene, NearestSS, DistSS, RegType, seqPhysio, seqMutated,
         SPiCEproba, SPiCEinter_2thr, deltaMES, mutInPBarea, deltaESRscore, posCryptMut, sstypeCryptMut, probaCryptMut,
         classProbaCryptMut, nearestSStoCrypt, nearestPosSStoCrypt, nearestDistSStoCrypt, posCryptWT, probaCryptWT,
@@ -1914,7 +1918,11 @@ splitRawToTable <- function(raw, sep = "\t", head = TRUE){
         data=as.data.frame(matrix(splitRaw, ncol = nCol,byrow = TRUE))
         colnames(data) <- columNames
     }else{
-        nCol = length(as.numeric(unlist(gregexpr("\t", raw[1] ,fixed=TRUE))))+1
+        if(as.numeric(unlist(gregexpr("\t", raw[1] ,fixed=TRUE)))<0){
+            nCol=1
+        }else{
+            nCol = length(as.numeric(unlist(gregexpr("\t", raw[1] ,fixed=TRUE))))+1
+        }
         splitRaw = unlist(strsplit(raw, sep, fixed=TRUE))
         data=as.data.frame(matrix(splitRaw, ncol = nCol, byrow = TRUE))
     }
@@ -1926,7 +1934,7 @@ SPiP <- function(varID,i){
     if(as.numeric(regexpr('no transcript',varID))>0|
         as.numeric(regexpr('mutUnknown',varID))>0)
     {
-        return(paste(rep("NA",30),collapse="\t"))
+        return(paste(rep("NA",35),collapse="\t"))
     }else{
         tryCatch({
             getVariantInfo(as.character(varID))
@@ -1937,7 +1945,7 @@ SPiP <- function(varID,i){
             message(paste("Variant caused a error:", varID))
             message("Here's the original error message:")
             message(cond)
-            return(paste(rep("NA",30),collapse="\t"))
+            return(paste(rep("NA",35),collapse="\t"))
         })
     }
 }
