@@ -2054,7 +2054,7 @@ if(!is.null(data)){
     message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
 
     colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "varType", "ntChange",
-        "transcript", "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated",
+        "ExonInfo", "transcript", "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated",
         "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut",
         "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
         "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
