@@ -35,10 +35,11 @@ git clone https://github.com/raphaelleman/SPiP
 cd ./SPiP
 ```
 
-SPiP needs also to install 2 libraries, from the R console:
+SPiP needs also to install 3 libraries, from the R console:
 ```R
 install.packages(“RCurl”)
-install.packages(“parallel”)
+install.packages("foreach")
+install.packages("doParallel")
 ```
 
 For some version of Linux the installation of RCurl package requiers instalation of libcurl dependencies:

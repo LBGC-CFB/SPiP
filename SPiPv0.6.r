@@ -65,6 +65,22 @@ library(parallel)
 		message(cond)
 		message("*****You need to install \'parallel\' library\nInstall it by: install.pakages(\'parallel\')")
 })
+tryCatch({
+library(foreach)
+},
+	error=function(cond) {
+		message("Here's the original error message:")
+		message(cond)
+		message("*****You need to install \'foreach\' library\nInstall it by: install.pakages(\'foreach\')")
+})
+tryCatch({
+library(doParallel)
+},
+	error=function(cond) {
+		message("Here's the original error message:")
+		message(cond)
+		message("*****You need to install \'doParallel\' library\nInstall it by: install.pakages(\'doParallel\')")
+})
 
 myOpts <- curlOptions(connecttimeout = 10)
 options(scipen=50)
@@ -149,6 +165,8 @@ if(is.null(samPath)){
 		stop()
 	}
 }
+
+registerDoParallel(threads)
 
 message("##################")
 message("#Your options:")
@@ -1943,9 +1961,6 @@ SPiP <- function(varID,i){
             },
         error=function(cond) {
             message(paste("Variant caused a error:", varID))
-            message("Here's the original error message:")
-            message(cond)
-            return(paste(rep("NA",35),collapse="\t"))
         })
     }
 }
@@ -2058,7 +2073,11 @@ if(!is.null(data)){
     message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
     total <- nrow(data)
     pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
-    rawResult = mcmapply(FUN = SPiP, data[,"varID"],1:nrow(data), mc.cores = threads, mc.preschedule = TRUE)
+    rawResult<-foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
+        SPiP(data[i,"varID"],i)
+    }
+    print(rawResult[nchar(rawResult)<600])
+    rawResult[nchar(rawResult)<600] = paste(rep("NA",35),collapse="\t")
     message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
 
     colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "varType", "ntChange",
@@ -2111,7 +2130,11 @@ while(T){
         message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
         total <- nrow(data)
         pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
-        rawResult = mcmapply(FUN = SPiP, data[,"varID"],1:nrow(data), mc.cores = threads, mc.preschedule = TRUE)
+        rawResult<-foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
+            SPiP(data[i,"varID"],i)
+        }
+        print(rawResult[nchar(rawResult)<600])
+        rawResult[nchar(rawResult)<600] = paste(rep("NA",35),collapse="\t")
 
         message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
         writeLines(paste(rawInput,rawResult,sep="\t"), con = output, sep = "\n")
