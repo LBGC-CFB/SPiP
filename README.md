@@ -51,7 +51,7 @@ sudo apt-get install libcurl4-nss-dev
 ```
 
 ### Install Samtools<a id="3"></a>
-In the main to optimize the run of SPiP you can also install samtools. SPiP will use samtools to get the DNA sequences.
+SPiP will use samtools to get the DNA sequences.
 
 ```shell
 cd /path/to/SPiP/
@@ -95,6 +95,11 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 | InterConfident | 92.9 % +/- 2.1 % | The risk that the variant impact splicing<br/>Estimated from collection of variant with *in vitro* RNA studies and frequent variant |
 | chr | chr17 | Chromosome number |
 | strand | - | Strand of the junction ('+': forward;<br/> '-':reverse) |
+| varType | substitution | Type of variant |
+| ntChange | T>G | Nucleotides variation |
+| ExonInfo | Intron 4 (1499) | Number and size of Exon/Intron |
+| transcript | NM_007294 | Transcript (RefSeq) |
+| gene | BRCA1 | Gene symbol (RefSeq) |
 | gNomen | 41256979 | Genomic position of variant |
 | seqPhysio | ACGG...AGGA | (A, C, G, T)-sequence before the mutation |
 | seqMutated | ACGG...AGGA | (A, C, G, T)-sequence after the mutation |

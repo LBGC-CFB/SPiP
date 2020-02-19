@@ -50,14 +50,6 @@ headerHelp = c("### SPiP output v0.6",
 
 #import librairy
 tryCatch({
-library(RCurl)
-},
-	error=function(cond) {
-		message("Here's the original error message:")
-		message(cond)
-		message("*****You need to install \'RCurl\' library\nInstall it by: install.pakages(\'RCurl\'")
-})
-tryCatch({
 library(parallel)
 },
 	error=function(cond) {
@@ -82,7 +74,6 @@ library(doParallel)
 		message("*****You need to install \'doParallel\' library\nInstall it by: install.pakages(\'doParallel\')")
 })
 
-myOpts <- curlOptions(connecttimeout = 10)
 options(scipen=50)
 samPath=NULL
 fastaFile=NULL
@@ -92,21 +83,21 @@ maxLines = 1000
 printHead = FALSE
 
 #SPiP arguments
-helpMessage="Usage: SPiPv0.6.r\n
+helpMessage=paste("Usage: SPiPv0.6.r\n
     Mandatory \n
         -I, --input /path/to/inputFile\t\tlist of variants file (.txt or .vcf)
-        -O, --output /path/to/outputFile\t\tName of ouput file (.txt)\n
-    Genome options \n
-        -g, --GenomeAssenbly hg19\t\tGenome assembly version (hg19 or hg38) [default= hg19]
-        -s, --SamPath /path/to/samtools]\t\tPath to samtools, if you want to use Ensembl api keep this argument empty
+        -O, --output /path/to/outputFile\t\tName of ouput file (.txt)
+        -s, --SamPath /path/to/samtools]\t\tPath to samtools executable
         -f, --fastaGenome /path/to/fastaGenome\t\tfasta file of genome used by samtools\n
+    Genome options \n
+        -g, --GenomeAssenbly hg19\t\tGenome assembly version (hg19 or hg38) [default= ",genome,"]
     Parallel options \n
-        -t, --threads N\t\tNumber of threads used for the calculation [default= 1]
-        -l, --maxLines N\t\tNumber of lines read in each time [default= 1000]\n
+        -t, --threads N\t\tNumber of threads used for the calculation [default= ",threads,"]
+        -l, --maxLines N\t\tNumber of lines read in each time [default= ",maxLines,"]\n
     Other options\n
         --header \t\tPrint meta-header info
     -h, --help\t\tPrint this help message and exit\n
-   You could : Rscript SPiPv0.6.r -I ./testCrypt.txt -O ./outTestCrypt.txt"
+   You could : Rscript SPiPv0.6.r -I ./testCrypt.txt -O ./outTestCrypt.txt",sep="")
 
 #get script argument
 argsFull <- commandArgs()
@@ -153,17 +144,12 @@ if(genome!="hg19" & genome!="hg38"){
 	stop()
 }
 
-if(is.null(samPath)){
-	useEnsemblAPI="YES"
-}else{
-	useEnsemblAPI="NO"
-	if(is.null(fastaFile)){
-		message("###########################")
-		message("#No fasta file for samtools")
-		message("###########################")
-        message(helpMessage)
-		stop()
-	}
+if(is.null(fastaFile)|is.null(samPath)){
+	message("###########################")
+	message("#No fasta file for samtools")
+	message("###########################")
+    message(helpMessage)
+    stop()
 }
 
 registerDoParallel(threads)
@@ -174,11 +160,8 @@ message("##################")
 message(paste("Input File:",normalizePath(inputFile)))
 message(paste("Output File:",outputFile))
 message(paste("Genome assembly:",genome))
-message(paste("Request method for sequences: , by",if(is.null(samPath)){"Ensembl API"}else{"Samtools"}))
-if(!is.null(samPath)){
-    message(paste("Samtools:", normalizePath(samPath)))
-    message(paste("Fasta genome:", normalizePath(fastaFile)))
-}
+message(paste("Samtools:", normalizePath(samPath)))
+message(paste("Fasta genome:", normalizePath(fastaFile)))
 message(paste("Nb threads:",threads))
 message(paste("Nb max lines read in each time:",maxLines))
 
@@ -810,59 +793,16 @@ getSeqFromSamtools <- function(chromosome,start,end,strand,command,fastaRef){
 	return(seqDNA)
 }
 
-getSeqFromEnsembl <- function(genome,sens,chr,start,end){
-    if(genome=="hg38"){
-        server = "http://rest.ensembl.org/"
-    }else if(genome=="hg19"){
-        server = "http://grch37.rest.ensembl.org/"
-    }
-
-    if(sens=="+"){
-        urls = paste(server ,"sequence/region/human/",chr,":",start,"..",end,":1.fasta",sep="")
-
-    }else if(sens=="-"){
-        urls = paste(server ,"sequence/region/human/",chr,":",start,"..",end,":-1.fasta",sep="")
-    }
-    seqFasta=""
-    i = 0
-    while(seqFasta==""){
-        try(eval(parse(text="seqFasta = getURL(urls, .opts = myOpts)")))
-        i = i+1
-        if(seqFasta==""){
-            Sys.sleep(3)
-            print(i)
-        }else{
-            seqDNA <<- unlist(strsplit(as.character(seqFasta),"\n"))[-1]
-        }
-    }
-    if(length(seqDNA)>1){
-        seqDNApool=""
-        for(i in 1:length(seqDNA)){
-            seqDNApool=paste(seqDNApool,seqDNA[i],sep="")
-        }
-        seqDNA = seqDNApool
-    }else{
-        seqDNA = "NNNNNNNN"
-    }
-	return(seqDNA)
-}
-
 getSequencePhysio <- function(genome,sens,chr,start,end){
-	if(useEnsemblAPI=="YES"){
-		seqDNA = getSeqFromEnsembl(genome,sens,chr,start,end)
-	}else{
-		command = samPath
-		fastaRef = fastaFile
-		gPos=c(start,end)
-		gPos = gPos[order(gPos)]
-        seqDNA = getSeqFromSamtools(chr, gPos[1], gPos[2], sens, command, fastaRef)
-        if(seqDNA=="ERROR samtools"){
-            message(paste("Request sequence caused a error:", chr, gPos[1], gPos[2], sens, command, fastaRef,"\n"))
-            message("Try the Ensembl API:")
-            seqDNA = getSeqFromEnsembl(genome,sens,chr,start,end)
-        }
-	}
-	return(seqDNA)
+	command = samPath
+	fastaRef = fastaFile
+	gPos=c(start,end)
+	gPos = gPos[order(gPos)]
+    seqDNA = getSeqFromSamtools(chr, gPos[1], gPos[2], sens, command, fastaRef)
+    if(seqDNA=="ERROR samtools"){
+        message(paste("Request sequence caused a error:", chr, gPos[1], gPos[2], sens, command, fastaRef,"\n"))
+    }
+    return(seqDNA)
 }
 
 checkCalculableScore <- function(seq){
