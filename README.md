@@ -37,17 +37,8 @@ cd ./SPiP
 
 SPiP needs also to install 3 libraries, from the R console:
 ```R
-install.packages(“RCurl”)
 install.packages("foreach")
 install.packages("doParallel")
-```
-
-For some version of Linux the installation of RCurl package requiers instalation of libcurl dependencies:
-```shell
-sudo apt-get update
-sudo apt-get install libcurl4-openssl-dev
-sudo apt-get install libcurl4-gnutls-dev
-sudo apt-get install libcurl4-nss-dev
 ```
 
 ### Install Samtools<a id="3"></a>
