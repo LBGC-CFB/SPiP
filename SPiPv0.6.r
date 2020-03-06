@@ -1,53 +1,5 @@
 #!/usr/bin/env Rscript
 
-headerHelp = c("### SPiP output v0.6",
-                "## varID \tThe name of variant (transcript:mutation)",
-                "## Interpretation \tOverall prediction of SPiP",
-                "##    Alter by SPiCE \tAlteration of consensus splice site predicted by SPiCE (corresponding to classes \"medium\" and \"high\" of SPiCE)",
-                "##    Alter by MES (Poly TC) \tAlteration of polypyrimidine tract by MES (threshold of -15 %)",
-                "##    Alter BP \tAlteration of branch point predicted by BPP (variant in 4-mer of BP)",
-                "##    Alter ESR \tAlteration of ESR motifs predicted by deltaESRseq (threshold of 1.10)",
-                "##    Alter by create Cryptic/Exon \tCreation of new splice site",
-                "##    NTR \tNothing To Report, no alteration predicted",
-                "## InterConfident \tProbability of splicing alteration with CI_95%, estimated from mutations 65,955 mutations",
-                "## chr \tChromosome number",
-                "## strand \tStrand of the transcripts",
-                "## varType \tType of variant",
-                "## ntChange \tNucleotides variation",
-                "## ExonInfo \tNumber and size of Exon/Intron",
-                "## transcript \tTranscript (RefSeq)",
-                "## gene \tGene symbol (RefSeq)",
-                "## gNomen \tGenomic coordinates",
-                "## seqPhysio \t(A, C, G, T)-sequence before the mutation",
-                "## seqMutated \t(A, C, G, T)-sequence after the mutation",
-                "## NearestSS \tNearest splice site to the mutation",
-                "## distSS \tDistance between the splice site and the mutation",
-                "## RegType \tType of region in the transcript, Exon/Intron",
-                "##    Cons \tConsensus splice site (5\': -3; +6 / 3\': -12; +2)",
-                "##    PolyTC \tPolypyrimidine tract (-20; -13)",
-                "##    BP \tBranch point area (-44; -18)",
-                "## SPiCEproba \tSPiCE score",
-                "## SPiCEinter_2thr \tClasses of SPiCE (low, medium, high)",
-                "## deltaMES \tDelta score of MES",
-                "## mutInPBarea \tMutation in branch point",
-                "## deltaESRscore \tScore of deltaESRscore",
-                "## posCryptMut \tPostion of mutated cryptic splice site",
-                "## sstypeCryptMut \tSplice type of mutated cryptic splice site",
-                "## probaCryptMut \tScore of mutated cryptic splice site",
-                "## classProbaCryptMut \tUse of mutated cryptic splice site (Yes/No)",
-                "## nearestSStoCrypt \tSplice type of the nearest natural splice site to the mutated cryptic site",
-                "## nearestPosSStoCrypt \tPosition of the nearest natural splice site to the mutated cryptic site",
-                "## nearestDistSStoCrypt \tDistance of the nearest natural splice site to the mutated cryptic site",
-                "## posCryptWT \tPostion of wild-type cryptic splice site",
-                "## probaCryptWT \tScore of wild-type cryptic splice site",
-                "## classProbaCryptWT \tUse of wild-type cryptic splice site (Yes/No)",
-                "## posSSPhysio \tPosition of the natural splice site (same splice type of cryptic site)",
-                "## probaSSPhysio \tScore of the natural splice site (same splice type of cryptic site)",
-                "## classProbaSSPhysio \tUse of the natural splice site (same splice type of cryptic site) (Yes/No)",
-                "## probaSSPhysioMut \tScore of the natural splice site (same splice type of cryptic site) after the mutation",
-                "## classProbaSSPhysioMut \tUse of the natural splice site (same splice type of cryptic site) after the mutation (Yes/No)"
-)
-
 #import librairy
 tryCatch({
 library(parallel)
@@ -81,6 +33,7 @@ threads = 1
 genome="hg19"
 maxLines = 1000
 printHead = FALSE
+printVCF = FALSE
 
 #SPiP arguments
 helpMessage=paste("Usage: SPiPv0.6.r\n
@@ -90,17 +43,19 @@ helpMessage=paste("Usage: SPiPv0.6.r\n
         -s, --SamPath /path/to/samtools]\t\tPath to samtools executable
         -f, --fastaGenome /path/to/fastaGenome\t\tfasta file of genome used by samtools\n
     Genome options \n
-        -g, --GenomeAssenbly hg19\t\tGenome assembly version (hg19 or hg38) [default= ",genome,"]
+        -g, --GenomeAssenbly hg19\t\tGenome assembly version (hg19 or hg38) [default= ",genome,"] \n
     Parallel options \n
         -t, --threads N\t\tNumber of threads used for the calculation [default= ",threads,"]
         -l, --maxLines N\t\tNumber of lines read in each time [default= ",maxLines,"]\n
     Other options\n
+        --VCF\t\tPrint output in vcf format
         --header \t\tPrint meta-header info
     -h, --help\t\tPrint this help message and exit\n
    You could : Rscript SPiPv0.6.r -I ./testCrypt.txt -O ./outTestCrypt.txt",sep="")
 
 #get script argument
 argsFull <- commandArgs()
+
 Rscript <- argsFull[1]
 
 scriptPath=dirname(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=="--file="])))
@@ -111,7 +66,7 @@ args = argsFull[(which(argsFull=="--args")+1):length(argsFull)]
 if (length(args)<4){message(helpMessage);stop("Not enought arguments")}
 
 i=1
-while (i < length(args)){
+while (i <= length(args)){
     if(args[i]=="-I"|args[i]=="--input"){
         inputFile=args[i+1];i = i+2
     }else if(args[i]=="-O"|args[i]=="--output"){
@@ -128,6 +83,8 @@ while (i < length(args)){
         maxLines=as.numeric(args[i+1]);i = i+2
     }else if(args[i]=="--header"){
         printHead=TRUE;i = i+1
+    }else if(args[i]=="--VCF"){
+        printVCF=TRUE;i = i+1
     }else if(args[i]=="-h"|args[i]=="--help"){
         message(helpMessage);stop()
     }else{
@@ -153,17 +110,137 @@ if(is.null(fastaFile)|is.null(samPath)){
 }
 
 registerDoParallel(threads)
+CMD = paste(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=="--file="])),
+        " --input ", normalizePath(inputFile),
+        " --output ", outputFile,
+        " --SamPath ", normalizePath(samPath),
+        " --fastaGenome ", normalizePath(fastaFile),
+        " --GenomeAssenbly ", genome,
+        " --threads ", threads,
+        " --maxLines ", maxLines,
+        if(printVCF){" --VCF "},
+        if(printHead){" --header "},sep="")
+
+headerHelp_hg19 = c("##fileformat=VCFv4.0",
+        "##SPiP output v0.6",
+        paste("##SPiPCommand=",CMD,sep=""),
+        "##assembly=GRCh37/hg19",
+        "##contig=<ID=chr1,length=249250621>",
+        "##contig=<ID=chr2,length=243199373>",
+        "##contig=<ID=chr3,length=198022430>",
+        "##contig=<ID=chr4,length=191154276>",
+        "##contig=<ID=chr5,length=180915260>",
+        "##contig=<ID=chr6,length=171115067>",
+        "##contig=<ID=chr7,length=159138663>",
+        "##contig=<ID=chr8,length=146364022>",
+        "##contig=<ID=chr9,length=141213431>",
+        "##contig=<ID=chr10,length=135534747>",
+        "##contig=<ID=chr11,length=135006516>",
+        "##contig=<ID=chr12,length=133851895>",
+        "##contig=<ID=chr13,length=115169878>",
+        "##contig=<ID=chr14,length=107349540>",
+        "##contig=<ID=chr15,length=102531392>",
+        "##contig=<ID=chr16,length=90354753>",
+        "##contig=<ID=chr17,length=81195210>",
+        "##contig=<ID=chr18,length=78077248>",
+        "##contig=<ID=chr19,length=59128983>",
+        "##contig=<ID=chr20,length=63025520>",
+        "##contig=<ID=chr21,length=48129895>",
+        "##contig=<ID=chrX,length=155270560>",
+        "##contig=<ID=chr22,length=51304566>",
+        "##contig=<ID=chrY,length=59373566>")
+
+headerHelp_hg38 = c("##fileformat=VCFv4.0",
+        "##SPiP output v0.6",
+        paste("##SPiPCommand=",CMD,sep=""),
+        "##assembly=GRCh38/hg38",
+        "##contig=<ID=chr1,length=248956422>",
+        "##contig=<ID=chr2,length=242193529>",
+        "##contig=<ID=chr3,length=198295559>",
+        "##contig=<ID=chr4,length=190214555>",
+        "##contig=<ID=chr5,length=181538259>",
+        "##contig=<ID=chr6,length=170805979>",
+        "##contig=<ID=chr7,length=159345973>",
+        "##contig=<ID=chr8,length=145138636>",
+        "##contig=<ID=chr9,length=138394717>",
+        "##contig=<ID=chr10,length=133797422>",
+        "##contig=<ID=chr11,length=135086622>",
+        "##contig=<ID=chr13,length=114364328>",
+        "##contig=<ID=chr14,length=107043718>",
+        "##contig=<ID=chr12,length=133275309>",
+        "##contig=<ID=chr15,length=101991189>",
+        "##contig=<ID=chr16,length=90338345>",
+        "##contig=<ID=chr17,length=83257441>",
+        "##contig=<ID=chr18,length=80373285>",
+        "##contig=<ID=chr19,length=58617616>",
+        "##contig=<ID=chr20,length=64444167>",
+        "##contig=<ID=chr21,length=46709983>",
+        "##contig=<ID=chr22,length=50818468>",
+        "##contig=<ID=chrX,length=156040895>",
+        "##contig=<ID=chrY,length=57227415>")
+
+headerHelp = c("##ALT=<ID=*,Description=\"Represents allele(s) other than observed.\">",
+                "##INFO=<ID=Interpretation,Number=1,Type=String,Description=\"Overall prediction of SPiP\">",
+                "##INFO=<ID=InterConfident,Number=1,Type=String,Description=\"Probability of splicing alteration with CI_95%, estimated from mutations 53,048 mutations\">",
+                "##INFO=<ID=strand,Number=1,Type=String,Description=\"Strand of the transcripts\">",
+                "##INFO=<ID=varType,Number=1,Type=String,Description=\"Type of variant\">",
+                "##INFO=<ID=ntChange,Number=1,Type=String,Description=\"Nucleotides variation\">",
+                "##INFO=<ID=ExonInfo,Number=1,Type=String,Description=\"Number and size of Exon/Intron\">",
+                "##INFO=<ID=transcript,Number=1,Type=String,Description=\"Transcript (RefSeq)\">",
+                "##INFO=<ID=gene,Number=1,Type=String,Description=\"Gene symbol (RefSeq)\">",
+                "##INFO=<ID=NearestSS,Number=1,Type=String,Description=\"Nearest splice site to the mutation\">",
+                "##INFO=<ID=distSS,Number=1,Type=String,Description=\"Distance between the splice site and the mutation\">",
+                "##INFO=<ID=RegType,Number=1,Type=String,Description=\"Type of region in the transcript, Exon/Intron\">",
+                "##INFO=<ID=SPiCEproba,Number=1,Type=Float,Description=\"SPiCE score\">",
+                "##INFO=<ID=SPiCEinter_2thr,Number=1,Type=String,Description=\"Classes of SPiCE (low, medium, high)\">",
+                "##INFO=<ID=deltaMES,Number=1,Type=Float,Description=\"Delta score of MES\">",
+                "##INFO=<ID=mutInPBarea,Number=1,Type=String,Description=\"Mutation in branch point\">",
+                "##INFO=<ID=deltaESRscore,Number=1,Type=Float,Description=\"Score of deltaESRscore\">",
+                "##INFO=<ID=posCryptMut,Number=1,Type=Integer,Description=\"Postion of mutated cryptic splice site\">",
+                "##INFO=<ID=sstypeCryptMut,Number=1,Type=String,Description=\"Splice type of mutated cryptic splice site\">",
+                "##INFO=<ID=probaCryptMut,Number=1,Type=Float,Description=\"Score of mutated cryptic splice site\">",
+                "##INFO=<ID=classProbaCryptMut,Number=1,Type=String,Description=\"Use of mutated cryptic splice site (Yes/No)\">",
+                "##INFO=<ID=nearestSStoCrypt,Number=1,Type=String,Description=\"Splice type of the nearest natural splice site to the mutated cryptic site\">",
+                "##INFO=<ID=nearestPosSStoCrypt,Number=1,Type=Integer,Description=\"Position of the nearest natural splice site to the mutated cryptic site\">",
+                "##INFO=<ID=nearestDistSStoCrypt,Number=1,Type=Integer,Description=\"Distance of the nearest natural splice site to the mutated cryptic site\">",
+                "##INFO=<ID=posCryptWT,Number=1,Type=Integer,Description=\"Postion of wild-type cryptic splice site\">",
+                "##INFO=<ID=probaCryptWT,Number=1,Type=Float,Description=\"Score of wild-type cryptic splice site\">",
+                "##INFO=<ID=classProbaCryptWT,Number=1,Type=String,Description=\"Use of wild-type cryptic splice site (Yes/No)\">",
+                "##INFO=<ID=posSSPhysio,Number=1,Type=Integer,Description=\"Position of the natural splice site (same splice type of cryptic site)\">",
+                "##INFO=<ID=probaSSPhysio,Number=1,Type=Float,Description=\"Score of the natural splice site (same splice type of cryptic site)\">",
+                "##INFO=<ID=classProbaSSPhysio,Number=1,Type=String,Description=\"Use of the natural splice site (same splice type of cryptic site) (Yes/No)\">",
+                "##INFO=<ID=probaSSPhysioMut,Number=1,Type=Float,Description=\"Score of the natural splice site (same splice type of cryptic site) after the mutation\">",
+                "##INFO=<ID=classProbaSSPhysioMut,Number=1,Type=String,Description=\"Use of the natural splice site (same splice type of cryptic site) after the mutation (Yes/No)\">"
+)
+
+fileFormat = tolower(substr(basename(inputFile),nchar(basename(inputFile))-2,nchar(basename(inputFile))))
+fileFormatOut = tolower(substr(outputFile,nchar(outputFile)-2,nchar(outputFile)))
+
+if(fileFormat!="txt" & fileFormat!="vcf"){
+    message("###########################")
+    message("#Incorrect format of input, please try again with a txt or vcf file")
+    message("###########################")
+    print_help(opt_parser)
+    stop()
+}
+
+if(fileFormatOut=="vcf"){printVCF = TRUE}
+
+output<-file(outputFile,"w")
+
+if(printHead & !printVCF){
+    writeLines(headerHelp,con = output,sep="\n")
+}else if(printVCF){
+    writeLines(c(if(genome=="hg19"){headerHelp_hg19}else{headerHelp_hg38},headerHelp),con = output,sep="\n")
+}
+
+flush(output)
+close(output)
 
 message("##################")
-message("#Your options:")
+message("#Your command:")
 message("##################")
-message(paste("Input File:",normalizePath(inputFile)))
-message(paste("Output File:",outputFile))
-message(paste("Genome assembly:",genome))
-message(paste("Samtools:", normalizePath(samPath)))
-message(paste("Fasta genome:", normalizePath(fastaFile)))
-message(paste("Nb threads:",threads))
-message(paste("Nb max lines read in each time:",maxLines))
+message(CMD)
 
 #Get Ref files
 inputref = paste(scriptPath, "/RefFiles",sep="")
@@ -1781,7 +1858,7 @@ getOutput <- function(){
 	tmpTableSeqNoPhyMut = tmpTableSeq[tmpTableSeq$Physio!="Yes" & tmpTableSeq$seqType == "Mut",]
 
 	strand <- sens
-	gNomen <- varPos[1]
+	gNomen <- if(length(varPos)==1){varPos}else{paste(varPos,collapse=";")}
 	NearestSS <- SstypePhy
 	if(length(varPos)==1){
 		DistSS <- distSS
@@ -1887,20 +1964,102 @@ splitRawToTable <- function(raw, sep = "\t", head = TRUE){
     return(data)
 }
 
+convertLine2VCF <- function(varID,SPiPout=NULL,error=FALSE){
+    ID = as.character(varID)
+    QUAL = "."
+    FILTER = "."
+    if(!error){
+        names(SPiPout) = c("Interpretation", "InterConfident", "chr", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "transcript",
+            "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated",
+            "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut",
+            "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
+            "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut")
+        seq = SPiPout["seqPhysio"]
+        strand = SPiPout["strand"]
+        varType = SPiPout["varType"]
+        if(strand=="-"){seq = getRevSeq(seq)}
+
+        CHROM = SPiPout["chr"]
+        if(varType=="substitution"){
+            POS = SPiPout["gNomen"]
+            REF = if(strand=="+"){unlist(strsplit(ntChange,">",fixed=T))[1]}else if(strand=="-"){getRevSeq(unlist(strsplit(ntChange,">",fixed=T))[1])}
+            ALT = if(strand=="+"){unlist(strsplit(ntChange,">",fixed=T))[2]}else if(strand=="-"){getRevSeq(unlist(strsplit(ntChange,">",fixed=T))[2])}
+        }else if(varType=="ins"){
+            POS = as.numeric(SPiPout["gNomen"])-1
+            REF = substr(seq,151,151)
+            ALT = paste0(REF,if(strand=="+"){gsub("ins","",ntChange)}else if(strand=="-"){getRevSeq(gsub("ins","",ntChange))})
+        }else if(varType=="dup"){
+            varPOS = as.numeric(unlist(strsplit(SPiPout["gNomen"],";",fixed=T)))
+            if(length(varPOS)==1){varPOS=rep(varPOS,2)}
+            POS = min(varPOS)-1
+            mutSize = abs(varPOS[1]-varPOS[2])
+            ntDup = substr(seq,151,151+mutSize)
+            REF = paste0(substr(seq,150,150),ntDup)
+            ALT = paste0(substr(seq,150,150),paste(rep(ntDup,2),collapse=""))
+        }else if(varType=="del"){
+            varPOS = as.numeric(unlist(strsplit(SPiPout["gNomen"],";",fixed=T)))
+            if(length(varPOS)==1){varPOS=rep(varPOS,2)}
+            POS = min(varPOS)-1
+            mutSize = abs(varPOS[1]-varPOS[2])
+            ntDel = substr(seq,151,151+mutSize)
+            REF = paste0(substr(seq,150,150),ntDel)
+            ALT = substr(seq,150,150)
+        }else if(varType=="delins"){
+            varPOS = as.numeric(unlist(strsplit(SPiPout["gNomen"],";",fixed=T)))
+            if(length(varPOS)==1){varPOS=rep(varPOS,2)}
+            POS = min(varPOS)-1
+            mutSize = abs(varPOS[1]-varPOS[2])
+            ntDel = substr(seq,151,151+mutSize)
+            ntIns = if(strand=="+"){gsub("delins","",ntChange)}else if(strand=="-"){getRevSeq(gsub("delins","",ntChange))}
+            REF = paste0(substr(seq,150,150),ntDel)
+            ALT = paste0(substr(seq,150,150),ntIns)
+        }
+
+        INFO = paste(c("Interpretation", "InterConfident", "strand", "varType", "ntChange", "ExonInfo", "transcript", "gene", "NearestSS",
+                    "DistSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
+                    "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT",
+                    "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),
+                    paste0("\"",SPiPout[c("Interpretation", "InterConfident", "strand", "varType", "ntChange", "ExonInfo", "transcript", "gene", "NearestSS",
+                                "DistSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
+                                "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT",
+                                "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut")],
+                            "\""),
+                    sep="=",collapse="|")
+    }else{
+        CHROM <- POS <- REF <- ALT <- INFO  <- "."
+    }
+
+    VCFline = c(CHROM,POS,ID,REF,ALT,QUAL,FILTER,INFO)
+    return(VCFline)
+}
+
 SPiP <- function(varID,i){
     setTxtProgressBar(pb2, i)
     if(as.numeric(regexpr('no transcript',varID))>0|
         as.numeric(regexpr('mutUnknown',varID))>0)
     {
-        return(paste(rep("NA",35),collapse="\t"))
+        if(printVCF){
+            return(paste(convertLine2VCF(varID,error=T),collapse="\t"))
+        }else{
+            return(paste(rep("NA",35),collapse="\t"))
+        }
     }else{
         tryCatch({
             getVariantInfo(as.character(varID))
             tmp <- getOutput()
-            return(paste(tmp,collapse="\t"))
-            },
+            if(printVCF){
+                return(paste(convertLine2VCF(varID,tmp,error=F),collapse="\t"))
+            }else{
+                return(paste(tmp,collapse="\t"))
+            }
+        },
         error=function(cond) {
             message(paste("Variant caused a error:", varID))
+            if(printVCF){
+                return(paste(convertLine2VCF(varID,error=T),collapse="\t"))
+            }else{
+                return(paste(rep("NA",35),collapse="\t"))
+            }
         })
     }
 }
@@ -1909,6 +2068,15 @@ SPiP <- function(varID,i){
 T1 <- as.numeric(format(Sys.time(), "%s"))
 
 #import data
+contigToChr <- function(text){
+    text1=unlist(strsplit(text, ".", fixed = TRUE))[1]
+    chr='.'
+    if(substr(text1,1,2)=="NC"){
+        chr=paste('chr',as.numeric(substr(text1,4,nchar(text1))),sep="")
+        if(chr=="chr23"){chr="chrX"}else if(chr=="chr24"){chr="chrY"}
+    }
+    return(chr)
+}
 
 readVCF <- function(dataLine,i){
     setTxtProgressBar(pb, i)
@@ -1921,7 +2089,11 @@ readVCF <- function(dataLine,i){
         variant = "mutUnknown"
     }else{
         if(substr(as.character(chrom[1]),1,3)!="chr"){
-            chrom = paste("chr",chrom,sep="")
+            if(substr(as.character(chrom[1]),1,3)=="NC_"){
+                chrom = contigToChr(as.character(chrom))
+            }else{
+                chrom = paste("chr",chrom,sep="")
+            }
         }
         transcript = as.character(dataRefSeq[dataRefSeq$V1==chrom & dataRefSeq$V2<=pos & dataRefSeq$V3>=pos,'V4'])
         strandTrans = as.character(dataRefSeq[dataRefSeq$V1==chrom & dataRefSeq$V2<=pos & dataRefSeq$V3>=pos,'V6'])
@@ -1959,17 +2131,6 @@ readVCF <- function(dataLine,i){
 s<-0 # first iteration
 input<-file(inputFile,"r")
 
-output<-file(outputFile,"w")
-
-fileFormat = tolower(substr(basename(inputFile),nchar(basename(inputFile))-2,nchar(basename(inputFile))))
-
-if(printHead){
-    writeLines(headerHelp,con = output,sep="\n")
-}
-
-flush(output)
-close(output)
-
 message(paste(s+1,s+maxLines,sep=" to "))
 data=NULL
 rawInput<-readLines(input, n=maxLines)
@@ -1991,8 +2152,8 @@ if(fileFormat=="txt"){
 }else if(fileFormat=="vcf"){
     if(as.numeric(regexpr("#",rawInput[length(rawInput)]))<0){
         mHeader = rawInput[grep("#",rawInput,fixed=TRUE)]
-        mHeader = mHeader[length(mHeader)]
-        columNames <- c(mHeader,"varID")
+        columNames <- c(mHeader[length(mHeader)],"varID")
+        mHeader = mHeader[-length(mHeader)]
         message(paste(sub("CET",":",Sys.time(),fixed=T),"Align VCF mutation on transcripts..."))
         rawInput = rawInput[-grep("#",rawInput,fixed=TRUE)]
         total <- length(rawInput)
@@ -2000,15 +2161,9 @@ if(fileFormat=="txt"){
         tmpVCF = unlist(mcmapply(FUN = readVCF,rawInput,1:length(rawInput), mc.cores = threads, mc.preschedule = TRUE))
         data = data.frame(varID = as.character(tmpVCF))
         rawInput = paste(names(tmpVCF),data[,'varID'],sep="\t")
-    }
-
-}else{
-    message("###########################")
-    message("#Incorrect format of input, please try again with a txt or vcf file")
-    message("###########################")
-    print_help(opt_parser)
-    stop()
+    }else{mHeader = rawInput}
 }
+
 if(!is.null(data)){
     message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
     total <- nrow(data)
@@ -2016,8 +2171,8 @@ if(!is.null(data)){
     rawResult<-foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
         SPiP(data[i,"varID"],i)
     }
-    print(rawResult[nchar(rawResult)<600])
-    rawResult[nchar(rawResult)<600] = paste(rep("NA",35),collapse="\t")
+#    print(rawResult[nchar(rawResult)<600])
+#    rawResult[nchar(rawResult)<600] = paste(rep("NA",35),collapse="\t")
     message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
 
     colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "varType", "ntChange",
@@ -2026,11 +2181,17 @@ if(!is.null(data)){
         "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
         "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
 
-    if(printHead){output<-file(outputFile,"a")}else{output<-file(outputFile,"w")}
-    writeLines(c(colNames,paste(rawInput,rawResult,sep="\t")),con = output,sep="\n")
+    if(!printHead & !printVCF){output<-file(outputFile,"w")}else{output<-file(outputFile,"a")}
+    if(printVCF){
+        writeLines(c("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO", unlist(rawResult)), con = output,sep="\n")
+    }else{
+        writeLines(c(if(fileFormat=="vcf"){mHeader},
+            colNames,
+            paste(rawInput,rawResult,sep="\t")),
+            con = output,sep="\n")
+    }
     flush(output)
     close(output)
-
 }
 
 s<-s+maxLines
@@ -2039,6 +2200,7 @@ s<-s+maxLines
 output<-file(outputFile,"a")
 while(T){
     data=NULL
+    printmHeader = FALSE
     message(paste(s+1,s+maxLines,sep=" to "))
     rawInput<-readLines(input, n=maxLines)
     if(length(rawInput)==0) break
@@ -2050,12 +2212,11 @@ while(T){
         colnames(data) <- columNames
     }else if(fileFormat=="vcf"){
         if(as.numeric(regexpr("#",rawInput[length(rawInput)]))<0){
-            printHead=FALSE
             if(as.numeric(regexpr("#",rawInput[1]))>0){
-                printHead=TRUE
-                mHeader = rawInput[grep("#",rawInput,fixed=TRUE)]
-                mHeader = mHeader[length(mHeader)]
-                columNames <- c(mHeader,"varID")
+                printmHeader = TRUE
+                mHeader = c(mHeader,rawInput[grep("#",rawInput,fixed=TRUE)])
+                columNames <- c(mHeader[length(mHeader)],"varID")
+                mHeader = mHeader[-length(mHeader)]
                 rawInput = rawInput[-grep("#",rawInput,fixed=TRUE)]
             }
             message(paste(sub("CET",":",Sys.time(),fixed=T),"Align VCF mutation on transcripts..."))
@@ -2064,7 +2225,7 @@ while(T){
             tmpVCF = unlist(mcmapply(FUN = readVCF,rawInput,1:length(rawInput), mc.cores = threads, mc.preschedule = TRUE))
             data = data.frame(varID = as.character(tmpVCF))
             rawInput = paste(names(tmpVCF),data[,'varID'],sep="\t")
-        }
+        }else{mHeader = c(mHeader,rawInput);printmHeader = TRUE}
     }
     if(!is.null(data)){
         message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
@@ -2077,7 +2238,11 @@ while(T){
         rawResult[nchar(rawResult)<600] = paste(rep("NA",35),collapse="\t")
 
         message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
-        writeLines(paste(rawInput,rawResult,sep="\t"), con = output, sep = "\n")
+        if(printVCF){
+            writeLines(unlist(rawResult), con = output,sep="\n")
+        }else{
+            writeLines(c(if(printmHeader){mHeader},paste(rawInput,rawResult,sep="\t")), con = output, sep = "\n")
+        }
         flush(output)
     }
     s<-s+maxLines
