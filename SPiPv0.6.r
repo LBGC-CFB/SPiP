@@ -1,5 +1,8 @@
 #!/usr/bin/env Rscript
 
+#######################
+# SPiP software
+#######################
 #import librairy
 tryCatch({
 library(parallel)
@@ -26,6 +29,20 @@ library(doParallel)
 		message("*****You need to install \'doParallel\' library\nInstall it by: install.pakages(\'doParallel\')")
 })
 
+message("
+      _.-'''-,
+    .'        `\\
+   /           /
+  /      .--^_^
+  |     /  C ,,\\
+  |    |   \\  _.)
+   \\   |   /  \\
+    '-, \\./ \\)\\)
+       `-/   );/
+_________''--'-'________________
+")
+
+# Env variables
 options(scipen=50)
 samPath=NULL
 fastaFile=NULL
