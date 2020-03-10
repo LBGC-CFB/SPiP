@@ -15,6 +15,8 @@ SPiP is available for Windows OS at https://sourceforge.net/projects/splicing-pr
     * [Load the human genome](#4)
 * [Run SPiP](#5)
     * [SPiP options](#6)
+* [Authors](#7)
+* [License](#8)
 
 ## Repository contents<a id="1"></a>
 
@@ -148,55 +150,127 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 
 + Number of lines read in each time [default= 1000]
 
+**--VCF**
+
++ Get the SPiP output in VCF format (v4.0)
+
+```shell
+##fileformat=VCFv4.0
+##SPiP output v0.6
+##SPiPCommand=/path/to/SPiPv0.6.r -I inputFile -O outputFile -s /path/to/samtools -f /path/to/genomeReference.fe --VCF
+##assembly=GRCh37/hg19
+##contig=<ID=chr1,length=249250621>
+##contig=<ID=chr2,length=243199373>
+##contig=<ID=chr3,length=198022430>
+##contig=<ID=chr4,length=191154276>
+##contig=<ID=chr5,length=180915260>
+##contig=<ID=chr6,length=171115067>
+##contig=<ID=chr7,length=159138663>
+##contig=<ID=chr8,length=146364022>
+##contig=<ID=chr9,length=141213431>
+##contig=<ID=chr10,length=135534747>
+##contig=<ID=chr11,length=135006516>
+##contig=<ID=chr12,length=133851895>
+##contig=<ID=chr13,length=115169878>
+##contig=<ID=chr14,length=107349540>
+##contig=<ID=chr15,length=102531392>
+##contig=<ID=chr16,length=90354753>
+##contig=<ID=chr17,length=81195210>
+##contig=<ID=chr18,length=78077248>
+##contig=<ID=chr19,length=59128983>
+##contig=<ID=chr20,length=63025520>
+##contig=<ID=chr21,length=48129895>
+##contig=<ID=chrX,length=155270560>
+##contig=<ID=chr22,length=51304566>
+##contig=<ID=chrY,length=59373566>
+##INFO=<ID=varID,Number=1,Type=String,Description="The name of variant (transcript:mutation)">
+##INFO=<ID=Interpretation,Number=1,Type=String,Description="Overall prediction of SPiP">
+##INFO=<ID=InterConfident,Number=1,Type=String,Description="Probability of splicing alteration with CI_95%, estimated from mutations 53,048 mutations">
+##INFO=<ID=chr,Number=1,Type=String,Description="Chromosome number">
+##INFO=<ID=strand,Number=1,Type=String,Description="Strand of the transcripts">
+##INFO=<ID=varType,Number=1,Type=String,Description="Type of variant">
+##INFO=<ID=ntChange,Number=1,Type=String,Description="Nucleotides variation">
+##INFO=<ID=ExonInfo,Number=1,Type=String,Description="Number and size of Exon/Intron">
+##INFO=<ID=transcript,Number=1,Type=String,Description="Transcript (RefSeq)">
+##INFO=<ID=gene,Number=1,Type=String,Description="Gene symbol (RefSeq)">
+##INFO=<ID=gNomen,Number=1,Type=String,Description="Genomic coordinates">
+##INFO=<ID=seqPhysio,Number=1,Type=String,Description="(A, C, G, T)-sequence before the mutation">
+##INFO=<ID=seqMutated,Number=1,Type=String,Description="(A, C, G, T)-sequence after the mutation">
+##INFO=<ID=NearestSS,Number=1,Type=String,Description="Nearest splice site to the mutation">
+##INFO=<ID=distSS,Number=1,Type=String,Description="Distance between the splice site and the mutation">
+##INFO=<ID=RegType,Number=1,Type=String,Description="Type of region in the transcript, Exon/Intron">
+##INFO=<ID=SPiCEproba,Number=1,Type=Float,Description="SPiCE score">
+##INFO=<ID=SPiCEinter_2thr,Number=1,Type=String,Description="Classes of SPiCE (low, medium, high)">
+##INFO=<ID=deltaMES,Number=1,Type=Float,Description="Delta score of MES">
+##INFO=<ID=mutInPBarea,Number=1,Type=String,Description="Mutation in branch point">
+##INFO=<ID=deltaESRscore,Number=1,Type=Float,Description="Score of deltaESRscore">
+##INFO=<ID=posCryptMut,Number=1,Type=Integer,Description="Postion of mutated cryptic splice site">
+##INFO=<ID=sstypeCryptMut,Number=1,Type=String,Description="Splice type of mutated cryptic splice site">
+##INFO=<ID=probaCryptMut,Number=1,Type=Float,Description="Score of mutated cryptic splice site">
+##INFO=<ID=classProbaCryptMut,Number=1,Type=String,Description="Use of mutated cryptic splice site (Yes/No)">
+##INFO=<ID=nearestSStoCrypt,Number=1,Type=String,Description="Splice type of the nearest natural splice site to the mutated cryptic site">
+##INFO=<ID=nearestPosSStoCrypt,Number=1,Type=Integer,Description="Position of the nearest natural splice site to the mutated cryptic site">
+##INFO=<ID=nearestDistSStoCrypt,Number=1,Type=Integer,Description="Distance of the nearest natural splice site to the mutated cryptic site">
+##INFO=<ID=posCryptWT,Number=1,Type=Integer,Description="Postion of wild-type cryptic splice site">
+##INFO=<ID=probaCryptWT,Number=1,Type=Float,Description="Score of wild-type cryptic splice site">
+##INFO=<ID=classProbaCryptWT,Number=1,Type=String,Description="Use of wild-type cryptic splice site (Yes/No)">
+##INFO=<ID=posSSPhysio,Number=1,Type=Integer,Description="Position of the natural splice site (same splice type of cryptic site)">
+##INFO=<ID=probaSSPhysio,Number=1,Type=Float,Description="Score of the natural splice site (same splice type of cryptic site)">
+##INFO=<ID=classProbaSSPhysio,Number=1,Type=String,Description="Use of the natural splice site (same splice type of cryptic site) (Yes/No)">
+##INFO=<ID=probaSSPhysioMut,Number=1,Type=Float,Description="Score of the natural splice site (same splice type of cryptic site) after the mutation">
+##INFO=<ID=classProbaSSPhysioMut,Number=1,Type=String,Description="Use of the natural splice site (same splice type of cryptic site) after the mutation (Yes/No)">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr1	15765825	NM_007272:g.15765825:G>A	G	A	.	.	Interpretation="NTR"|InterConfident="00.04 % [00.02 % ; 00.08%]"|strand="+"|varType="substitution"|ntChange="G>A"|ExonInfo="Intron 1 (1795)"|transcript="NM_007272"|gene="CTRC"|NearestSS="donor"|DistSS="825"|RegType="DeepIntron"|SPiCEproba="0"|SPiCEinter_2thr="Outside SPiCE Interpretation"|deltaMES="0"|mutInPBarea="No"|deltaESRscore="NA"|posCryptMut="15765816"|sstypeCryptMut="Acc"|probaCryptMut="0.00206159394907144"|classProbaCryptMut="No"|nearestSStoCrypt="Don"|nearestPosSStoCrypt="15765000"|nearestDistSStoCrypt="816"|posCryptWT="15765816"|probaCryptWT="0.00161527498798199"|classProbaCryptWT="No"|posSSPhysio="15766795"|probaSSPhysio="0.0775463330795674"|classProbaSSPhysio="Yes"|probaSSPhysioMut="0.0775463330795674"|classProbaSSPhysioMut="Yes"
+```
+
 **--header**
 
-+ Add the meta-column information to the file, to explain the significance of each SPiP column
++ Add the meta-column information to the file, to explain the significance of each SPiP column (only in text format output)
 
-```R
-    ### SPiP output v0.6
-    ## varID \tThe name of variant (transcript:mutation)
-    ## Interpretation \tOverall prediction of SPiP
-    ##    Alter by SPiCE \tAlteration of consensus splice site predicted by SPiCE (corresponding to classes \"medium\" and \"high\" of SPiCE)
-    ##    Alter by MES (Poly TC) \tAlteration of polypyrimidine tract by MES (threshold of -15 %)
-    ##    Alter BP \tAlteration of branch point predicted by BPP (variant in 4-mer of BP)
-    ##    Alter ESR \tAlteration of ESR motifs predicted by deltaESRseq (threshold of 1.10)
-    ##    Alter by create Cryptic/Exon \tCreation of new splice site
-    ##    NTR \tNothing To Report, no alteration predicted
-    ## InterConfident \tProbability of splicing alteration with CI_95%, estimated from mutations 65,955 mutations
-    ## chr \tChromosome number
-    ## strand \tStrand of the transcripts
-    ## varType \tType of variant
-    ## ntChange \tNucleotides variation
-    ## ExonInfo \tNumber and size of Exon/Intron
-    ## transcript \tTranscript (RefSeq)
-    ## gene \tGene symbol (RefSeq)
-    ## gNomen \tGenomic coordinates
-    ## seqPhysio \t(A, C, G, T)-sequence before the mutation
-    ## seqMutated \t(A, C, G, T)-sequence after the mutation
-    ## NearestSS \tNearest splice site to the mutation
-    ## distSS \tDistance between the splice site and the mutation
-    ## RegType \tType of region in the transcript, Exon/Intron
-    ##    Cons \tConsensus splice site (5\': -3; +6 / 3\': -12; +2)
-    ##    PolyTC \tPolypyrimidine tract (-20; -13)
-    ##    BP \tBranch point area (-44; -18)
-    ## SPiCEproba \tSPiCE score
-    ## SPiCEinter_2thr \tClasses of SPiCE (low, medium, high)
-    ## deltaMES \tDelta score of MES",
-    ## mutInPBarea \tMutation in branch point
-    ## deltaESRscore \tScore of deltaESRscore
-    ## posCryptMut \tPostion of mutated cryptic splice site
-    ## sstypeCryptMut \tSplice type of mutated cryptic splice site
-    ## probaCryptMut \tScore of mutated cryptic splice site
-    ## classProbaCryptMut \tUse of mutated cryptic splice site (Yes/No)
-    ## nearestSStoCrypt \tSplice type of the nearest natural splice site to the mutated cryptic site
-    ## nearestPosSStoCrypt \tPosition of the nearest natural splice site to the mutated cryptic site
-    ## nearestDistSStoCrypt \tDistance of the nearest natural splice site to the mutated cryptic site
-    ## posCryptWT \tPostion of wild-type cryptic splice site
-    ## probaCryptWT \tScore of wild-type cryptic splice site
-    ## classProbaCryptWT \tUse of wild-type cryptic splice site (Yes/No)
-    ## posSSPhysio \tPosition of the natural splice site (same splice type of cryptic site)
-    ## probaSSPhysio \tScore of the natural splice site (same splice type of cryptic site)
-    ## classProbaSSPhysio \tUse of the natural splice site (same splice type of cryptic site) (Yes/No)
-    ## probaSSPhysioMut \tScore of the natural splice site (same splice type of cryptic site) after the mutation
-    ## classProbaSSPhysioMut \tUse of the natural splice site (same splice type of cryptic site) after the mutation (Yes/No)
+```shell
+    ##ALT=<ID=*,Description=\"Represents allele(s) other than observed.\">
+    ##INFO=<ID=Interpretation,Number=1,Type=String,Description=\"Overall prediction of SPiP\">
+    ##INFO=<ID=InterConfident,Number=1,Type=String,Description=\"Probability of splicing alteration with CI_95%, estimated from mutations 53,048 mutations\">
+    ##INFO=<ID=strand,Number=1,Type=String,Description=\"Strand of the transcripts\">
+    ##INFO=<ID=varType,Number=1,Type=String,Description=\"Type of variant\">
+    ##INFO=<ID=ntChange,Number=1,Type=String,Description=\"Nucleotides variation\">
+    ##INFO=<ID=ExonInfo,Number=1,Type=String,Description=\"Number and size of Exon/Intron\">
+    ##INFO=<ID=transcript,Number=1,Type=String,Description=\"Transcript (RefSeq)\">
+    ##INFO=<ID=gene,Number=1,Type=String,Description=\"Gene symbol (RefSeq)\">
+    ##INFO=<ID=NearestSS,Number=1,Type=String,Description=\"Nearest splice site to the mutation\">
+    ##INFO=<ID=distSS,Number=1,Type=String,Description=\"Distance between the splice site and the mutation\">
+    ##INFO=<ID=RegType,Number=1,Type=String,Description=\"Type of region in the transcript, Exon/Intron\">
+    ##INFO=<ID=SPiCEproba,Number=1,Type=Float,Description=\"SPiCE score\">
+    ##INFO=<ID=SPiCEinter_2thr,Number=1,Type=String,Description=\"Classes of SPiCE (low, medium, high)\">
+    ##INFO=<ID=deltaMES,Number=1,Type=Float,Description=\"Delta score of MES\">
+    ##INFO=<ID=mutInPBarea,Number=1,Type=String,Description=\"Mutation in branch point\">
+    ##INFO=<ID=deltaESRscore,Number=1,Type=Float,Description=\"Score of deltaESRscore\">
+    ##INFO=<ID=posCryptMut,Number=1,Type=Integer,Description=\"Postion of mutated cryptic splice site\">
+    ##INFO=<ID=sstypeCryptMut,Number=1,Type=String,Description=\"Splice type of mutated cryptic splice site\">
+    ##INFO=<ID=probaCryptMut,Number=1,Type=Float,Description=\"Score of mutated cryptic splice site\">
+    ##INFO=<ID=classProbaCryptMut,Number=1,Type=String,Description=\"Use of mutated cryptic splice site (Yes/No)\">
+    ##INFO=<ID=nearestSStoCrypt,Number=1,Type=String,Description=\"Splice type of the nearest natural splice site to the mutated cryptic site\">
+    ##INFO=<ID=nearestPosSStoCrypt,Number=1,Type=Integer,Description=\"Position of the nearest natural splice site to the mutated cryptic site\">
+    ##INFO=<ID=nearestDistSStoCrypt,Number=1,Type=Integer,Description=\"Distance of the nearest natural splice site to the mutated cryptic site\">
+    ##INFO=<ID=posCryptWT,Number=1,Type=Integer,Description=\"Postion of wild-type cryptic splice site\">
+    ##INFO=<ID=probaCryptWT,Number=1,Type=Float,Description=\"Score of wild-type cryptic splice site\">
+    ##INFO=<ID=classProbaCryptWT,Number=1,Type=String,Description=\"Use of wild-type cryptic splice site (Yes/No)\">
+    ##INFO=<ID=posSSPhysio,Number=1,Type=Integer,Description=\"Position of the natural splice site (same splice type of cryptic site)\">
+    ##INFO=<ID=probaSSPhysio,Number=1,Type=Float,Description=\"Score of the natural splice site (same splice type of cryptic site)\">
+    ##INFO=<ID=classProbaSSPhysio,Number=1,Type=String,Description=\"Use of the natural splice site (same splice type of cryptic site) (Yes/No)\">
+    ##INFO=<ID=probaSSPhysioMut,Number=1,Type=Float,Description=\"Score of the natural splice site (same splice type of cryptic site) after the mutation\">
+    ##INFO=<ID=classProbaSSPhysioMut,Number=1,Type=String,Description=\"Use of the natural splice site (same splice type of cryptic site) after the mutation (Yes/No)\">
 ```
+## Authors <a id="7"></a>
+
+
+* Raphael Leman - [raphaelleman](https://github.com/raphaelleman/ "tittle")
+    * You can contact me at: r.leman@baclesse.unicancer.fr or raphael.leman@orange.fr
+
+> **Cite as:** SPiP: a Splicing Prediction Pipeline addressing the diversity of splice alterations validated on a diagnostic set of 3,048 exonic and intronic variants
+Raphaël Leman, Béatrice Parfait, Dominique Vidaud, Emmanuelle Girodon, Laurence Pacot, Gérald Legac, Chandran Ka, Claude Ferec, Yann Fichou, Céline Quesnelle, Etienne Muller, Dominique Vaur, Laurent Castera, Agathe Ricou, Hélène Tubeuf, Omar Soukarieh, Pascaline Gaildrat, Florence Riant, Marine Guillaud-Bataille, Sandrine M. Caputo, Virginie Caux-Moncoutier, Nadia Boutry-Kryza, Françoise Bonnet-Dorion, Ines Schultz, Maria Rossing, Michael T. Parsons, Amanda B. Spurdle, Thierry Frebourg, Alexandra Martins, Claude Houdayer, Sophie Krieger, [in preparation](https://doi.org/10.1093/bioinformatics/btz784 "tittle")
+
+## License <a id="8"></a>
+
+
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/raphaelleman/SPiP/blob/master/LICENSE "tittle") file for details
