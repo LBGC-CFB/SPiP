@@ -37,7 +37,7 @@ git clone https://github.com/raphaelleman/SPiP
 cd ./SPiP
 ```
 
-SPiP needs also to install 3 libraries, from the R console:
+SPiP needs also to install 2 libraries, from the R console:
 ```R
 install.packages("foreach")
 install.packages("doParallel")
