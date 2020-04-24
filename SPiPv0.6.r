@@ -126,6 +126,16 @@ if(is.null(fastaFile)|is.null(samPath)){
     stop()
 }
 
+fastaIndex = paste0(fastaFile,".fai")
+if(!file.exists(fastaIndex)){
+    message("###########################")
+    message("#No index file for samtools")
+    message("#Use: /path/to/samtools faidx /path/to/genome.fa")
+    message("###########################")
+    message(helpMessage)
+    stop()
+}
+
 registerDoParallel(threads)
 CMD = paste(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=="--file="])),
         " --input ", normalizePath(inputFile),
@@ -237,7 +247,7 @@ if(fileFormat!="txt" & fileFormat!="vcf"){
     message("###########################")
     message("#Incorrect format of input, please try again with a txt or vcf file")
     message("###########################")
-    print_help(opt_parser)
+    message(helpMessage)
     stop()
 }
 
@@ -318,6 +328,28 @@ names(me2x5) <- as.character(ME2x5$V1.1)
 
 inverseDic <- data.frame(V1 = c('T','G','C','A','N'),row.names = c('A','C','G','T','N'))
 inverseDic$V1 <- as.character(inverseDic$V1)
+
+contigToChr <- function(text){
+    text1=unlist(strsplit(text, ".", fixed = TRUE))[1]
+    chr=text
+    if(substr(text1,1,2)=="NC"){
+        chr=paste('chr',as.numeric(substr(text1,4,nchar(text1))),sep="")
+        if(chr=="chr23"){chr="chrX"}else if(chr=="chr24"){chr="chrY"}
+    }
+    return(chr)
+}
+
+chrIndex = read.table(fastaIndex,sep="\t",header=FALSE,colClasses = "character")
+chrIndex = chrIndex[,1]
+if(substr(chrIndex[1],1,3)=="chr"){
+    names(chrIndex) = chrIndex
+}else if(nchar(chrIndex[1])<=2){
+    names(chrIndex) = paste0("chr",chrIndex)
+}else if(substr(chrIndex[1],1,3)=="NC_"){
+    chrConvert = NULL
+    for(i in chrIndex){chrConvert = c(chrConvert,contigToChr(i))}
+    names(chrIndex) = chrConvert
+}
 
 #functions used in this pipeline
 
@@ -859,9 +891,9 @@ getRevSeq <- function(sequence){
     return(seqRev)
 }
 
-getSeqFromSamtools <- function(chromosome,start,end,strand,command,fastaRef){
+getSeqFromSamtools <- function(chromosome,start,end,strand,command,fastaFile){
 	posToAsk <- paste(chromosome,':',start,'-',end,sep="")
-	path2script <- paste('faidx',fastaRef,posToAsk)
+	path2script <- paste('faidx',fastaFile,posToAsk)
     samtoolsSeq = system2(command, args=path2script, stdout = TRUE, stderr=TRUE)
     samtoolsHead = samtoolsSeq[1]
 	samtoolsSeq = samtoolsSeq[-1]
@@ -889,12 +921,12 @@ getSeqFromSamtools <- function(chromosome,start,end,strand,command,fastaRef){
 
 getSequencePhysio <- function(genome,sens,chr,start,end){
 	command = samPath
-	fastaRef = fastaFile
+    chrCorr = chrIndex[chr]
 	gPos=c(start,end)
 	gPos = gPos[order(gPos)]
-    seqDNA = getSeqFromSamtools(chr, gPos[1], gPos[2], sens, command, fastaRef)
+    seqDNA = getSeqFromSamtools(chrCorr, gPos[1], gPos[2], sens, command, fastaFile)
     if(seqDNA=="ERROR samtools"){
-        message(paste("Request sequence caused a error:", chr, gPos[1], gPos[2], sens, command, fastaRef,"\n"))
+        message(paste("Request sequence caused a error:", chrCorr, gPos[1], gPos[2], sens, command, fastaFile,"\n"))
     }
     return(seqDNA)
 }
@@ -2085,16 +2117,6 @@ SPiP <- function(varID,i){
 T1 <- as.numeric(format(Sys.time(), "%s"))
 
 #import data
-contigToChr <- function(text){
-    text1=unlist(strsplit(text, ".", fixed = TRUE))[1]
-    chr='.'
-    if(substr(text1,1,2)=="NC"){
-        chr=paste('chr',as.numeric(substr(text1,4,nchar(text1))),sep="")
-        if(chr=="chr23"){chr="chrX"}else if(chr=="chr24"){chr="chrY"}
-    }
-    return(chr)
-}
-
 readVCF <- function(dataLine,i){
     setTxtProgressBar(pb, i)
     dataLine = unlist(strsplit(dataLine,split='\t')) #c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO")
@@ -2163,7 +2185,7 @@ if(fileFormat=="txt"){
         message("###########################")
         message("#Your data doesn't have the varID column")
         message("###########################")
-        print_help(opt_parser)
+        message(helpMessage)
         stop()
     }
 }else if(fileFormat=="vcf"){
