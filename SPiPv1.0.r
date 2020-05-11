@@ -51,9 +51,10 @@ genome="hg19"
 maxLines = 1000
 printHead = FALSE
 printVCF = FALSE
+printProcess = FALSE
 
 #SPiP arguments
-helpMessage=paste("Usage: SPiPv0.6.r\n
+helpMessage=paste("Usage: SPiPv1.0.r\n
     Mandatory \n
         -I, --input /path/to/inputFile\t\tlist of variants file (.txt or .vcf)
         -O, --output /path/to/outputFile\t\tName of ouput file (.txt)
@@ -66,9 +67,10 @@ helpMessage=paste("Usage: SPiPv0.6.r\n
         -l, --maxLines N\t\tNumber of lines read in each time [default= ",maxLines,"]\n
     Other options\n
         --VCF\t\tPrint output in vcf format
-        --header \t\tPrint meta-header info
+        --header\t\tPrint meta-header info
+        --verbose\t\tShow run process
     -h, --help\t\tPrint this help message and exit\n
-   You could : Rscript SPiPv0.6.r -I ./testCrypt.txt -O ./outTestCrypt.txt",sep="")
+   You could : Rscript SPiPv1.0.r -I ./testCrypt.txt -O ./outTestCrypt.txt",sep="")
 
 #get script argument
 argsFull <- commandArgs()
@@ -102,6 +104,8 @@ while (i <= length(args)){
         printHead=TRUE;i = i+1
     }else if(args[i]=="--VCF"){
         printVCF=TRUE;i = i+1
+    }else if(args[i]=="--verbose"){
+        printProcess=TRUE;i = i+1
     }else if(args[i]=="-h"|args[i]=="--help"){
         message(helpMessage);stop()
     }else{
@@ -149,7 +153,7 @@ CMD = paste(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=="--fil
         if(printHead){" --header "},sep="")
 
 headerHelp_hg19 = c("##fileformat=VCFv4.0",
-        "##SPiP output v0.6",
+        "##SPiP output v1.0",
         paste("##SPiPCommand=",CMD,sep=""),
         "##assembly=GRCh37/hg19",
         "##contig=<ID=chr1,length=249250621>",
@@ -178,7 +182,7 @@ headerHelp_hg19 = c("##fileformat=VCFv4.0",
         "##contig=<ID=chrY,length=59373566>")
 
 headerHelp_hg38 = c("##fileformat=VCFv4.0",
-        "##SPiP output v0.6",
+        "##SPiP output v1.0",
         paste("##SPiPCommand=",CMD,sep=""),
         "##assembly=GRCh38/hg38",
         "##contig=<ID=chr1,length=248956422>",
@@ -1211,10 +1215,10 @@ getSplitTableSeq <- function(varName, chr, varPos, sens, seqPhysio, seqMutated, 
 	relPosAccMut = as.numeric(gregexpr("AG",seqMutated)[[1]])
 	relPosDonMut = as.numeric(gregexpr("GT",seqMutated)[[1]])
 
-	relPosAccPhyFilt = relPosAccPhy[relPosAccPhy >= 115 & relPosAccPhy <= 185]
-	relPosDonPhyFilt = relPosDonPhy[relPosDonPhy >= 130 & relPosDonPhy <= 170]
-	relPosAccMutFilt = relPosAccMut[relPosAccMut >= 115 & relPosAccMut <= 185]
-	relPosDonMutFilt = relPosDonMut[relPosDonMut >= 130 & relPosDonMut <= 170]
+	relPosAccPhyFilt = relPosAccPhy[relPosAccPhy >= 99 & relPosAccPhy <= 166]
+	relPosDonPhyFilt = relPosDonPhy[relPosDonPhy >= 119 & relPosDonPhy <= 201]
+	relPosAccMutFilt = relPosAccMut[relPosAccMut >= 137 & relPosAccMut <= 153]
+	relPosDonMutFilt = relPosDonMut[relPosDonMut >= 144 & relPosDonMut <= 157]
 
 	seqConsAccPhy = substr(rep(seqPhysio,length(relPosAccPhyFilt)),relPosAccPhyFilt-18,relPosAccPhyFilt+4)
 	seqConsDonPhy = substr(rep(seqPhysio,length(relPosDonPhyFilt)),relPosDonPhyFilt-3,relPosDonPhyFilt+5)
@@ -1312,15 +1316,19 @@ getSplitTableSeq <- function(varName, chr, varPos, sens, seqPhysio, seqMutated, 
 
     	tmpTableSeq$classProba = "No"
     	tmpTableSeq$classProba[tmpTableSeq$proba >= 0.00388264838136624] = "Yes"
+        tmpPhysio = tmpTableSeq[tmpTableSeq$Physio=="Yes",]
+
     	tmp = merge(tmpTableSeq[tmpTableSeq$seqType=="WT",c("sstype","pos","proba","Physio")],tmpTableSeq[tmpTableSeq$seqType=="Mut",c("sstype","pos","proba","Physio")],
     					by.x = c("sstype","pos"),by.y = c("sstype","pos"),all.x=F,all.y=T)
     	tmp$proba.x[is.na(tmp$proba.x)]=0
     	tmp$Physio.x[is.na(tmp$Physio.x)] = "No"
-
     	tmp = tmp[order(tmp$proba.y,decreasing=T),]
     	tmp = tmp[!duplicated(tmp$pos),]
-    	if(length(which(tmpTableSeq$seqType=="Mut" & tmpTableSeq$pos%in%tmp$pos[tmp$proba.x>=tmp$proba.y & tmp$Physio.x!="Yes"]))>0){
-    		tmpTableSeq = tmpTableSeq[-which(tmpTableSeq$seqType=="Mut" & tmpTableSeq$pos%in%tmp$pos[tmp$proba.x>=tmp$proba.y & tmp$Physio.x!="Yes"]),]
+
+        tmpTableSeq = tmpTableSeq[which(tmpTableSeq$pos%in%tmp$pos),]
+        tmpTableSeq = rbind(tmpTableSeq,tmpPhysio)
+    	if(length(which(tmpTableSeq$seqType=="Mut" & tmpTableSeq$pos%in%tmp$pos[tmp$proba.x >= tmp$proba.y & tmp$Physio.x!="Yes"]))>0){
+            tmpTableSeq = tmpTableSeq[-which(tmpTableSeq$seqType=="Mut" & tmpTableSeq$pos%in%tmp$pos[tmp$proba.x>=tmp$proba.y & tmp$Physio.x!="Yes"]),]
     	}
     }
 	return(tmpTableSeq)
@@ -1702,15 +1710,15 @@ getGlobaInterpretation <- function(SPiCEinterpret, RegType, deltaMES, mutInPBare
 	if (classProbaMut=="Yes"){
         if(classProbaWT=="Yes"){
             if(abs(distSS)>=150 & length(grep("Intron",RegType ))>0) {
-                interpretFinal =c(interpretFinal, "Alter by create Exon")
+                interpretFinal =c(interpretFinal, "Alter by create Cryptic Exon")
             }else{
-                interpretFinal = c(interpretFinal,"Alter by create Cryptic")
+                interpretFinal = c(interpretFinal,"Alter by create Cryptic splice site")
             }
         }else{
             if(abs(distSS)>=150 & length(grep("Intron",RegType ))>0) {
     			interpretFinal =c(interpretFinal, "Alter by create de Novo Exon")
     		}else{
-    			interpretFinal = c(interpretFinal,"Alter by create de Novo Cryptic")
+    			interpretFinal = c(interpretFinal,"Alter by create de Novo splice site")
     		}
         }
 	}
@@ -1723,59 +1731,59 @@ getGlobaInterpretation <- function(SPiCEinterpret, RegType, deltaMES, mutInPBare
 }
 
 getPredConfident <- function(interpretFinal, RegType, distSS, SstypePhy){
-	#proba from SNP + UV analysis (N = 66,000)
+	#proba from SNP + UV analysis (N = 53,000)
 	probaInter = -1
 	if (length(grep("Exon",RegType ))>0){
         if(SstypePhy=="acceptor"){
 		    if(length(grep("Alter by SPiCE",interpretFinal ))>0){
-                probaInter = "47.37 % [24.92 % ; 69.82 %]"
+                probaInter = "43.48 % [25.63 % ; 63.19 %]"
             }else if (length(grep("Alter ESR",interpretFinal ))>0){
-                probaInter = "27.33 % [22.54 % ; 32.12 %]"
+                probaInter = "28.87 % [24.29 % ; 33.93 %]"
             }else if (length(grep("Alter by create Cryptic",interpretFinal ))>0){
                 if(abs(distSS[1])<=120){
-                    probaInter = "06.25 % [02.69 % ; 13.81 %]"
+                    probaInter = "11.11 % [03.85 % ; 28.05 %]"
                 }else{
-                    probaInter = "04.17 % [02.13 % ; 08.01 %]"
+                    probaInter = "04.84 % [01.66 % ; 13.28 %]"
                 }
             }else if (length(grep("de Novo",interpretFinal ))>0){
                 if(abs(distSS[1])<=120){
-                    probaInter = "23.81 % [05.59 % ; 42.03 %]"
+                    probaInter = "21.05 % [08.51 % ; 43.33%]"
                 }else{
-                    probaInter = "03.39 % [00.94 % ; 11.54 %]"
+                    probaInter = "05.56 % [01.91 % ; 15.11 %]"
                 }
             }else{
                 if (length(grep("Cons",RegType ))>0){
-                    probaInter = "09.09 % [02.53 % ; 27.81 %]"
+                    probaInter = "08.00 % [02.22 % ; 24.96 %]"
                 }else if (abs(distSS[1])<=120){
-                    probaInter = "06.33 % [04.59 % ; 08.67 %]"
+                    probaInter = "05.46 % [04.02 % ; 07.38 %]"
                 }else{
-                    probaInter = "01.09 % [00.55 % ; 02.13 %]"
+                    probaInter = "01.24 % [00.71 % ; 02.15 %]"
                 }
             }
         }else{
             if(length(grep("Alter by SPiCE",interpretFinal ))>0){
-                probaInter = "85.71 % [76.90 % ; 91.82 %]"
+                probaInter = "85.82 % [79.11 % ; 90.63 %]"
             }else if (length(grep("Alter ESR",interpretFinal ))>0){
-                probaInter = "34.05 % [28.49 % ; 39.61 %]"
+                probaInter = "30.18 % [25.47 % ; 35.35 %]"
             }else if (length(grep("Alter by create Cryptic",interpretFinal ))>0){
                 if(abs(distSS[1])<=120){
-                    probaInter = "09.88 % [05.09 % ; 18.29 %]"
+                    probaInter = "21.05 % [08.51 % ; 43.33 %]"
                 }else{
-                    probaInter = "04.17 % [02.13 % ; 08.01 %]"
+                    probaInter = "04.84 % [01.66 % ; 13.28 %]"
                 }
             }else if (length(grep("de Novo",interpretFinal ))>0){
                 if(abs(distSS[1])<=120){
-                    probaInter = "27.27 % [08.66% ; 45.88 %]"
+                    probaInter = "25.00 % [12.68 % ; 43.36 %]"
                 }else{
-                    probaInter = "03.39 % [00.94 % ; 11.54 %]"
+                    probaInter = "05.56 % [01.91 % ; 15.11 %]"
                 }
             }else{
                 if (length(grep("Cons",RegType ))>0){
-                    probaInter = "07.14 % [01.98 % ; 22.64 %]"
+                    probaInter = "10.71 % [03.71 % ; 27.19 %]"
                 }else if (abs(distSS[1])<=120){
-                    probaInter = "05.35 % [03.76 % ; 07.58 %]"
+                    probaInter = "04.48 % [03.19 % ; 06.25 %]"
                 }else{
-                    probaInter = "01.09 % [00.55 % ; 02.13 %]"
+                    probaInter = "01.24 % [00.71 % ; 02.15 %]"
                 }
             }
         }
@@ -1783,75 +1791,73 @@ getPredConfident <- function(interpretFinal, RegType, distSS, SstypePhy){
         if(SstypePhy=="acceptor"){
             if(length(grep("Alter by SPiCE",interpretFinal ))>0){
                 if(distSS[1]>=(-2)){
-                    probaInter = "96.15 % [92.60 % ; 98.04 %]"
+                    probaInter = "98.67 % [96.17 % ; 99.55 %]"
                 }else{
-                    probaInter = "69.57 % [61.89 % ; 77.25 %]"
+                    probaInter = "66.21 % [58.18 % ; 81.58 %]"
                 }
             }else if (length(grep("Alter by MES",interpretFinal ))>0){
-                probaInter = "83.33 % [72.79 % ; 93.87 %]"
+                probaInter = "71.43 % [58.52 % ; 81.58 %]"
             }else if (length(grep("Alter BP",interpretFinal ))>0){
-                probaInter = "48.57 % [36.86 % ; 60.28 %]"
-            }else if(length(grep("Alter by create Cryptic",interpretFinal ))>0){
+                probaInter = "42.50 % [32.25 % ; 53.43 %]"
+            }else if(length(grep("Alter by create Cryptic splice site",interpretFinal ))>0){
                 if(length(grep("Cons",RegType ))>0 | length(grep("PolyTC",RegType))>0 | length(grep("BP",RegType))>0){
                     probaInter = "No available"
                 }else{
-                    probaInter = "02.84 % [01.11 % ; 07.07 %]"
+                    probaInter = "03.18 % [00.88 % ; 10.86 %]"
                 }
-            }else if(length(grep("Alter by create Exon",interpretFinal ))>0){
-                probaInter = "00.50 % [00.31 % ; 00.83 %]"
-            }else if (length(grep("de Novo Cryptic",interpretFinal ))>0){
+            }else if(length(grep("Alter by create Cryptic Exon",interpretFinal ))>0){
+                probaInter = "00.81 % [00.41 % ; 01.59 %]"
+            }else if (length(grep("de Novo splice site",interpretFinal ))>0){
                 if(length(grep("Cons",RegType ))>0){
                     probaInter = "No available"
-                }else if (length(grep("PolyTC",RegType))>0){
-                    probaInter = "63.64 % [35.21 % ; 92.07 %]"
-                }else if (length(grep("BP",RegType))>0){
-                    probaInter = "18.18 % [00.00 % ; 40.97 %]"
+                }else if (length(grep("PolyTC",RegType))>0 | length(grep("BP",RegType))>0){
+                    probaInter = "47.06 % [26.16 % ; 69.04 %]"
                 }else{
-                    probaInter = "09.62 % [04.17 % ; 20.61 %]"
+                    probaInter = "17.14 % [08.10 % ; 32.68 %]"
                 }
             }else if (length(grep("de Novo Exon",interpretFinal ))>0){
-                probaInter = "02.26 % [01.45 % ; 03.51%]"
+                probaInter = "02.66 % [01.77 % ; 03.99 %]"
     		}else{
                 if(length(grep("Cons",RegType ))>0){
-                    probaInter = "00.93 % [00.17 % ; 05.11 %]"
+                    probaInter = "01.75 % [00.49 % ; 06.17 %]"
                 }else if (length(grep("PolyTC",RegType))>0){
-                    probaInter = "06.90 % [03.20 % ; 14.24 %]"
+                    probaInter = "05.74 % [02.81 % ; 11.37 %]"
                 }else if (length(grep("BP",RegType))>0){
-                    probaInter = "01.95 % [00.76 % ; 04.90 %]"
+                    probaInter = "01.67 % [00.65 % ; 04.21 %]"
                 }else if (abs(distSS[1])<=150){
-                    probaInter = "00.13 % [00.02 % ; 00.74 %]"
+                    probaInter = "00.22 % [00.06 % ; 00.80 %]"
                 }else{
-                    probaInter = "00.06 % [00.03 % ; 00.11 %]"
+                    probaInter = "00.07 % [00.04 % ; 00.12 %]"
                 }
             }
     	}else{
     		if(length(grep("Alter by SPiCE",interpretFinal ))>0){
                 if(distSS[1]<=2){
-                    probaInter = "98.42 % [96.00 % ; 99.38 %]"
+                    probaInter = "97.46 % [94.85 % ; 98.76 %]"
                 }else{
-                    probaInter = "95.35 % [90.23 % ; 97.85 %]"
+                    probaInter = "96.95 % [92.41 % ; 98.81 %]"
                 }
-    		}else if(length(grep("Alter by create Cryptic",interpretFinal ))>0){
+    		}else if(length(grep("Alter by create Cryptic splice site",interpretFinal ))>0){
                 if(length(grep("Cons",RegType ))>0){
                     probaInter = "No available"
                 }else{
-                    probaInter = "03.63 % [01.76 % ; 07.29 %]"
+                    probaInter = "05.41 % [02.13 % ; 13.09 %]"
                 }
-    		}else if(length(grep("Alter by create Exon",interpretFinal ))>0){
-    			probaInter = "00.30 % [00.16 % ; 00.56 %]"
-            }else if (length(grep("de Novo Cryptic",interpretFinal ))>0){
+    		}else if(length(grep("Alter by create Cryptic Exon",interpretFinal ))>0){
+    			probaInter = "00.40 % [00.16 % ; 01.04 %]"
+            }else if (length(grep("de Novo splice site",interpretFinal ))>0){
                 if(length(grep("Cons",RegType ))>0){
                     probaInter = "No available"
                 }else{
-                    probaInter = "16.67 % [08.06 % ; 25.28 %]"
+                    probaInter = "16.88 % [10.14 % ; 26.78 %]"
                 }
             }else if (length(grep("de Novo Exon",interpretFinal ))>0){
-    			probaInter = "03.31 % [02.29 % ; 04.77 %]"
+    			probaInter = "03.56 % [02.51 % ; 05.03 %]"
     		}else{
         		if(length(grep("Cons",RegType ))>0){
-                    probaInter = "00.00 % [00.00 % ; 25.88 %]"
+                    probaInter = "00.00 % [00.00 % ; 24.26 %]"
                 }else if(abs(distSS[1])<=150){
-                    probaInter = "00.25 % [00.08 % ; 00.74 %]"
+                    probaInter = "00.34 % [00.14 % ; 00.80 %]"
                 }else{
                     probaInter = "00.04 % [00.02 % ; 00.08%]"
                 }
@@ -2083,7 +2089,7 @@ convertLine2VCF <- function(varID,SPiPout=NULL,error=FALSE){
 }
 
 SPiP <- function(varID,i){
-    setTxtProgressBar(pb2, i)
+    if(printProcess){setTxtProgressBar(pb2, i)}
     if(as.numeric(regexpr('no transcript',varID))>0|
         as.numeric(regexpr('mutUnknown',varID))>0)
     {
@@ -2118,7 +2124,7 @@ T1 <- as.numeric(format(Sys.time(), "%s"))
 
 #import data
 readVCF <- function(dataLine,i){
-    setTxtProgressBar(pb, i)
+    if(printProcess){setTxtProgressBar(pb, i)}
     dataLine = unlist(strsplit(dataLine,split='\t')) #c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO")
     chrom <- dataLine[1]
     pos <- as.numeric(dataLine[2])
@@ -2196,7 +2202,7 @@ if(fileFormat=="txt"){
         message(paste(sub("CET",":",Sys.time(),fixed=T),"Align VCF mutation on transcripts..."))
         rawInput = rawInput[-grep("#",rawInput,fixed=TRUE)]
         total <- length(rawInput)
-        pb <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
+        if(printProcess){pb <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)}
         tmpVCF = unlist(mcmapply(FUN = readVCF,rawInput,1:length(rawInput), mc.cores = threads, mc.preschedule = TRUE))
         data = data.frame(varID = as.character(tmpVCF))
         rawInput = paste(names(tmpVCF),data[,'varID'],sep="\t")
@@ -2206,12 +2212,10 @@ if(fileFormat=="txt"){
 if(!is.null(data)){
     message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
     total <- nrow(data)
-    pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
+    if(printProcess){pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)}
     rawResult<-foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
         SPiP(data[i,"varID"],i)
     }
-#    print(rawResult[nchar(rawResult)<600])
-#    rawResult[nchar(rawResult)<600] = paste(rep("NA",35),collapse="\t")
     message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
 
     colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "varType", "ntChange",
@@ -2260,7 +2264,7 @@ while(T){
             }
             message(paste(sub("CET",":",Sys.time(),fixed=T),"Align VCF mutation on transcripts..."))
             total <- length(rawInput)
-            pb <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
+            if(printProcess){pb <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)}
             tmpVCF = unlist(mcmapply(FUN = readVCF,rawInput,1:length(rawInput), mc.cores = threads, mc.preschedule = TRUE))
             data = data.frame(varID = as.character(tmpVCF))
             rawInput = paste(names(tmpVCF),data[,'varID'],sep="\t")
@@ -2269,7 +2273,7 @@ while(T){
     if(!is.null(data)){
         message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
         total <- nrow(data)
-        pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)
+        if(printProcess){pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)}
         rawResult<-foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
             SPiP(data[i,"varID"],i)
         }
