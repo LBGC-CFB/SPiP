@@ -22,10 +22,10 @@ SPiP is available for Windows OS at https://sourceforge.net/projects/splicing-pr
 
 ---
 
-* SPiPv0.6: the SPiP scripts
+* SPiPv1.0: the SPiP scripts
 * testCrypt.txt: an example of input data in text format
 * testVar.vcf: an example of input data in vcf format
-* *RefFiles*: folder where are the reference files use by SPiP
+* *RefFiles*: folder where are the reference files used by SPiP
 
 ## Install SPiP<a id="2"></a>
 
@@ -70,13 +70,13 @@ gunzip genomehg19.fa.gz
 
 ---
 
-you can get the different argument of SPiP by `Rscript /path/to/SPiPv0.6.r --help`
+you can get the different argument of SPiP by `Rscript /path/to/SPiPv1.0.r --help`
 
 An example of SPiP run with test file [testCrypt.txt](http://gitlab.baclesse.fr/LEMRAP/spip/blob/master/testCrypt.txt "tittle"):
 
 ```shell
 cd /path/to/SPiP/
-Rscript ./SPiPv0.6.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
+Rscript ./SPiPv1.0.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
 ```
 
 In this example SPiP will generate a text file "outputTest.txt" where the predictions will be save. The scheme of this output is:
@@ -150,14 +150,18 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 
 + Number of lines read in each time [default= 1000]
 
+**--verbose**
+
++ Show run process, *i.e.* displays progression bar tool
+
 **--VCF**
 
 + Get the SPiP output in VCF format (v4.0)
 
 ```shell
 ##fileformat=VCFv4.0
-##SPiP output v0.6
-##SPiPCommand=/path/to/SPiPv0.6.r -I inputFile -O outputFile -s /path/to/samtools -f /path/to/genomeReference.fe --VCF
+##SPiP output v1.0
+##SPiPCommand=/path/to/SPiPv1.0.r -I inputFile -O outputFile -s /path/to/samtools -f /path/to/genomeReference.fe --VCF
 ##assembly=GRCh37/hg19
 ##contig=<ID=chr1,length=249250621>
 ##contig=<ID=chr2,length=243199373>
