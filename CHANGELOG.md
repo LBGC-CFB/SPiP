@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 - Change VCF example file
 - Add policy to the SPiP script
 
-https://github.com/raphaelleman/SPiP/commit/e3ce1878b4a8f1ea30e2ddab778fbe646f6f8cef
+https://github.com/raphaelleman/SPiP/commit/e3ce1878b4a8f1ea30e2ddab778fbe646f6f8cef  
 https://github.com/raphaelleman/SPiP/commit/9e677cb4776f24f08738a87e251f908c9ca4f1e8
 https://github.com/raphaelleman/SPiP/commit/84b6510d10ac03f9a8bbbe8132766d1d2e2cc5de
 https://github.com/raphaelleman/SPiP/commit/b17569d98c7446ad24531e2d34eef3c3f59bc9e0
@@ -115,7 +115,7 @@ https://github.com/raphaelleman/SPiP/commit/3276a621afd4ff06bd52909a7067aa9e1b5a
 https://github.com/raphaelleman/SPiP/commit/749d13742157b3f3c4c8abc43f0d201342a291d1
 
 ## [0.2.2] - 2019-04-04
-- Corrected parallel functions 
+- Corrected parallel functions
 
 https://github.com/raphaelleman/SPiP/commit/fabfd133fb70ba6513221b2752e5a6b49654d2f2
 
