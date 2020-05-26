@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 - Change VCF example file
 - Add policy to the SPiP script
 
-https://github.com/raphaelleman/SPiP/commit/e3ce1878b4a8f1ea30e2ddab778fbe646f6f8cef  
+https://github.com/raphaelleman/SPiP/commit/e3ce1878b4a8f1ea30e2ddab778fbe646f6f8cef
 https://github.com/raphaelleman/SPiP/commit/9e677cb4776f24f08738a87e251f908c9ca4f1e8
 https://github.com/raphaelleman/SPiP/commit/84b6510d10ac03f9a8bbbe8132766d1d2e2cc5de
 https://github.com/raphaelleman/SPiP/commit/b17569d98c7446ad24531e2d34eef3c3f59bc9e0
@@ -36,8 +36,8 @@ https://github.com/raphaelleman/SPiP/commit/e1b9965742760db49cdf3680438b92927dc7
 https://github.com/raphaelleman/SPiP/commit/879568f540711b4c6e7f5f015708be6b4d645ef8
 https://github.com/raphaelleman/SPiP/commit/dece37f570907412658cf929b4c0516ed9cac33f
 https://github.com/raphaelleman/SPiP/commit/e756ad3662c8f5bde624b25661e2ea5c15d02e81
-https://github.com/raphaelleman/SPiP/commit/51230f9a2945f9952eebff0c5d8c507338c86b05
 https://github.com/raphaelleman/SPiP/commit/c92b3664e368b3abe50bc55bd555d555277fc20f
+https://github.com/raphaelleman/SPiP/commit/51230f9a2945f9952eebff0c5d8c507338c86b05
 https://github.com/raphaelleman/SPiP/commit/03fb95b24249220dc58774d1633ab1b0c9517a68
 https://github.com/raphaelleman/SPiP/commit/9dd9c034ed8ed539aac6347c302721043d847cfb
 https://github.com/raphaelleman/SPiP/commit/293cdb290d77f4df0492bff987b0b84c03d73c73
