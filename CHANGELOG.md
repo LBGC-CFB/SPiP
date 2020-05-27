@@ -11,15 +11,6 @@ All notable changes to this project will be documented in this file.
 - Change VCF example file
 - Add policy to the SPiP script
 
-<<<<<<< HEAD
-https://github.com/raphaelleman/SPiP/commit/e3ce1878b4a8f1ea30e2ddab778fbe646f6f8cef
-https://github.com/raphaelleman/SPiP/commit/9e677cb4776f24f08738a87e251f908c9ca4f1e8
-https://github.com/raphaelleman/SPiP/commit/84b6510d10ac03f9a8bbbe8132766d1d2e2cc5de
-https://github.com/raphaelleman/SPiP/commit/b17569d98c7446ad24531e2d34eef3c3f59bc9e0
-https://github.com/raphaelleman/SPiP/commit/cf5b8b0b1a35e013d09b9075be80c1bee12c9b84
-https://github.com/raphaelleman/SPiP/commit/573a4e42353aad0d4107d2fd8f75eb4379c60b7e
-https://github.com/raphaelleman/SPiP/commit/e87fd77f2d4b3c2f3201b8f6393a4423c41aa8f5
-=======
 https://github.com/raphaelleman/SPiP/commit/e3ce1878b4a8f1ea30e2ddab778fbe646f6f8cef<br>
 https://github.com/raphaelleman/SPiP/commit/9e677cb4776f24f08738a87e251f908c9ca4f1e8<br>
 https://github.com/raphaelleman/SPiP/commit/84b6510d10ac03f9a8bbbe8132766d1d2e2cc5de<br>
@@ -27,7 +18,6 @@ https://github.com/raphaelleman/SPiP/commit/b17569d98c7446ad24531e2d34eef3c3f59b
 https://github.com/raphaelleman/SPiP/commit/cf5b8b0b1a35e013d09b9075be80c1bee12c9b84<br>
 https://github.com/raphaelleman/SPiP/commit/573a4e42353aad0d4107d2fd8f75eb4379c60b7e<br>
 https://github.com/raphaelleman/SPiP/commit/e87fd77f2d4b3c2f3201b8f6393a4423c41aa8f5<br>
->>>>>>> 7943189... add changelog
 
 ## [0.6.1] - 2020-04-24
 - Check if samtools is executalbe
@@ -137,22 +127,12 @@ https://github.com/raphaelleman/SPiP/commit/bd19031d2ed2dab160177aea41bf6ea76f3c
 ## [0.2](https://github.com/raphaelleman/SPiP/blob/master/Releases/SPiPv0.2.r) - 2019-03-01
 - Git creation and push on https://github.com/raphaelleman/SPiP
 
-<<<<<<< HEAD
-https://github.com/raphaelleman/SPiP/commit/ad5bdcb94e5a798dc5f80ba9fcc46187e1418ab1
-https://github.com/raphaelleman/SPiP/commit/0c681edc71ae85eaacb0771c1bd14bd11753bdb6
-https://github.com/raphaelleman/SPiP/commit/98c7198959e66e47bb629040175842810144f015
-https://github.com/raphaelleman/SPiP/commit/7f9d821588ec1ab3403683f9d6b6fcbe599243b3
-https://github.com/raphaelleman/SPiP/commit/39e6aa5b9d9958adb52821c60494c93c533e3541
-https://github.com/raphaelleman/SPiP/commit/4e9d2aa09ff4500cd693b9e699432afdc1021e38
-=======
 https://github.com/raphaelleman/SPiP/commit/ad5bdcb94e5a798dc5f80ba9fcc46187e1418ab1<br>
-
 https://github.com/raphaelleman/SPiP/commit/0c681edc71ae85eaacb0771c1bd14bd11753bdb6<br>
 https://github.com/raphaelleman/SPiP/commit/98c7198959e66e47bb629040175842810144f015<br>
 https://github.com/raphaelleman/SPiP/commit/7f9d821588ec1ab3403683f9d6b6fcbe599243b3<br>
 https://github.com/raphaelleman/SPiP/commit/39e6aa5b9d9958adb52821c60494c93c533e3541<br>
 https://github.com/raphaelleman/SPiP/commit/4e9d2aa09ff4500cd693b9e699432afdc1021e38<br>
->>>>>>> 7943189... add changelog
 
 ## [0.1](https://github.com/raphaelleman/SPiP/blob/master/Releases/SPiPv0.1.r) - 2019-02-19
 - First version online only for Windows OS
