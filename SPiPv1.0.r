@@ -65,8 +65,8 @@ _________''--'-'________________
 
 # Env variables
 options(scipen=50)
-samPath=NULL
-fastaFile=NULL
+samPath=""
+fastaFile=""
 threads = 1
 genome="hg19"
 maxLines = 1000
@@ -79,7 +79,7 @@ helpMessage=paste("Usage: SPiPv1.0.r\n
     Mandatory \n
         -I, --input /path/to/inputFile\t\tlist of variants file (.txt or .vcf)
         -O, --output /path/to/outputFile\t\tName of ouput file (.txt)
-        -s, --SamPath /path/to/samtools]\t\tPath to samtools executable
+        -s, --SamPath /path/to/samtools\t\tPath to samtools executable
         -f, --fastaGenome /path/to/fastaGenome\t\tfasta file of genome used by samtools\n
     Genome options \n
         -g, --GenomeAssenbly hg19\t\tGenome assembly version (hg19 or hg38) [default= ",genome,"] \n
@@ -1144,7 +1144,7 @@ getSSF <- function(sstype,seqCon){
 
     	}else{
     		if(substr(as.vector(seqCon),4,5)=="GC"){
-    			SSF = SSFdonGT(seqCon)
+    			SSF = SSFdonGC(seqCon)
     		}else{
     			SSF = SSFdonGT(seqCon)
     		}
