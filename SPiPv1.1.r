@@ -73,6 +73,7 @@ printVCF = FALSE
 printProcess = FALSE
 pathToGene = NULL
 pathToTranscript = NULL
+pathToTranscriptome = NULL
 version = "1.1"
 
 #SPiP arguments
@@ -88,6 +89,7 @@ helpMessage=paste0("Usage: SPiPv",version,".r\n
     Other options\n
         --geneList /path/to/geneList.txt\t\tlist of gene to study
         --transcriptList /path/to/transcriptList.txt\t\tlist of transcript to study
+        --transcriptome /path/to/transcriptome_hgXX.RData\t\tTranscriptome path if file is not in /path/to/SPiP/RefFiles/
         --VCF\t\tPrint output in vcf format
         --header\t\tPrint meta-header info
         --verbose\t\tShow run process
@@ -109,13 +111,15 @@ if (length(args)<4){message(helpMessage);stop("Not enought arguments")}
 i=1
 while (i <= length(args)){
     if(args[i]=="-I"|args[i]=="--input"){
-        inputFile=args[i+1];i = i+2
+        inputFile=normalizePath(args[i+1]);i = i+2
     }else if(args[i]=="-O"|args[i]=="--output"){
         outputFile=args[i+1];i = i+2
     }else if(args[i]=="--geneList"){
-        pathToGene=args[i+1];i = i+2
+        pathToGene=normalizePath(args[i+1]);i = i+2
     }else if(args[i]=="--transcriptList"){
-        pathToTranscript=args[i+1];i = i+2
+        pathToTranscript=normalizePath(args[i+1]);i = i+2
+    }else if(args[i]=="--transcriptome"){
+        pathToTranscriptome=normalizePath(args[i+1]);i = i+2
     }else if(args[i]=="-g"|args[i]=="--GenomeAssenbly"){
         genome=args[i+1];i = i+2
     }else if(args[i]=="-t"|args[i]=="--threads"){
@@ -146,13 +150,14 @@ if(genome!="hg19" & genome!="hg38"){
 
 registerDoParallel(threads)
 CMD = paste0(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=="--file="])),
-        " --input ", normalizePath(inputFile),
+        " --input ", inputFile,
         " --output ", outputFile,
         " --GenomeAssenbly ", genome,
         " --threads ", threads,
         " --maxLines ", maxLines,
         if(!is.null(pathToGene)){paste0(" --geneList ",pathToGene)},
         if(!is.null(pathToTranscript)){paste0(" --transcriptList ",pathToTranscript)},
+        if(!is.null(pathToTranscriptome)){paste0(" --transcriptome ",pathToTranscriptome)},
         if(printVCF){" --VCF "},
         if(printHead){" --header "})
 
@@ -282,10 +287,15 @@ inputref = paste(scriptPath, "/RefFiles",sep="")
 
 message("Check transcriptome sequences...")
 if(!file.exists(paste(inputref,"/transcriptome_hg19.RData",sep="")) | !file.exists(paste(inputref,"/transcriptome_hg38.RData",sep=""))){
-	message("You have to install the transcriptome file in /path/to/SPiP/RefFiles/")
-    message("transcriptome_hg19.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg19.RData/download")
-    message("transcriptome_hg38.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg38.RData/download")
-    q(save="no")
+    if(!is.null(pathToTranscriptome)){
+        message(paste("Your transcriptome file:",pathToTranscriptome))
+        load(pathToTranscriptome)
+    }else{
+        message("You have to install the transcriptome file in /path/to/SPiP/RefFiles/")
+        message("transcriptome_hg19.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg19.RData/download")
+        message("transcriptome_hg38.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg38.RData/download")
+        q(save="no")
+    }
 }
 message("Load transcriptome sequences...")
 load(paste0(inputref, "/transcriptome_",genome,".RData"))
