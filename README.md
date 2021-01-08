@@ -48,7 +48,7 @@ you have to download frome sourcforge the RData files containing the transcripts
 **hg19** assembly : [transcriptome_hg19.RData](https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg19.RData/download "tittle")
 **hg38** assembly : [transcriptome_hg38.RData](https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg38.RData/download "tittle")
 
-Put these files in `/path/to/SPiP/RefFiles/`.
+Put these files in `/path/to/SPiP/RefFiles/` or you can define it manually by the option `--transcriptome`.
 
 NB: commands to regenerate these files are available in [getGenomeSequenceFromBSgenome.r](https://github.com/raphaelleman/SPiP/blob/master/RefFiles/getGenomeSequenceFromBSgenome.r "tittle")
 
@@ -139,6 +139,10 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 **--transcriptList** /path/to/transcriptList.txt
 
 + You can process analysis exclusively on a transcript list, available only if VCF input
+
+**--transcriptome** /path/to/transcriptome_hgXX.RData
+
++ You can define where you have installed the file transcriptome_hgXX.RData if your file is not in /path/to/SPiP/RefFiles/
 
 **--VCF**
 
