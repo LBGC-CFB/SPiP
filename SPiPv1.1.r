@@ -65,33 +65,34 @@ _________''--'-'________________
 
 # Env variables
 options(scipen=50)
-samPath=""
-fastaFile=""
 threads = 1
 genome="hg19"
 maxLines = 1000
 printHead = FALSE
 printVCF = FALSE
 printProcess = FALSE
+pathToGene = NULL
+pathToTranscript = NULL
+version = "1.1"
 
 #SPiP arguments
-helpMessage=paste("Usage: SPiPv1.0.r\n
+helpMessage=paste0("Usage: SPiPv",version,".r\n
     Mandatory \n
         -I, --input /path/to/inputFile\t\tlist of variants file (.txt or .vcf)
-        -O, --output /path/to/outputFile\t\tName of ouput file (.txt)
-        -s, --SamPath /path/to/samtools\t\tPath to samtools executable
-        -f, --fastaGenome /path/to/fastaGenome\t\tfasta file of genome used by samtools\n
+        -O, --output /path/to/outputFile\t\tName of ouput file (.txt)\n
     Genome options \n
         -g, --GenomeAssenbly hg19\t\tGenome assembly version (hg19 or hg38) [default= ",genome,"] \n
     Parallel options \n
         -t, --threads N\t\tNumber of threads used for the calculation [default= ",threads,"]
         -l, --maxLines N\t\tNumber of lines read in each time [default= ",maxLines,"]\n
     Other options\n
+        --geneList /path/to/geneList.txt\t\tlist of gene to study
+        --transcriptList /path/to/transcriptList.txt\t\tlist of transcript to study
         --VCF\t\tPrint output in vcf format
         --header\t\tPrint meta-header info
         --verbose\t\tShow run process
     -h, --help\t\tPrint this help message and exit\n
-   You could : Rscript SPiPv1.0.r -I ./testCrypt.txt -O ./outTestCrypt.txt",sep="")
+   You could : Rscript SPiPv",version,".r -I ./testCrypt.txt -O ./outTestCrypt.txt")
 
 #get script argument
 argsFull <- commandArgs()
@@ -111,12 +112,12 @@ while (i <= length(args)){
         inputFile=args[i+1];i = i+2
     }else if(args[i]=="-O"|args[i]=="--output"){
         outputFile=args[i+1];i = i+2
+    }else if(args[i]=="--geneList"){
+        pathToGene=args[i+1];i = i+2
+    }else if(args[i]=="--transcriptList"){
+        pathToTranscript=args[i+1];i = i+2
     }else if(args[i]=="-g"|args[i]=="--GenomeAssenbly"){
         genome=args[i+1];i = i+2
-    }else if(args[i]=="-s"|args[i]=="--SamPath"){
-        samPath=args[i+1];i = i+2
-    }else if(args[i]=="-f"|args[i]=="--fastaGenome"){
-        fastaFile=args[i+1];i = i+2
     }else if(args[i]=="-t"|args[i]=="--threads"){
         threads= as.numeric(args[i+1]);i = i+2
     }else if(args[i]=="-l"|args[i]=="--maxLines"){
@@ -143,45 +144,20 @@ if(genome!="hg19" & genome!="hg38"){
 	stop()
 }
 
-if(is.null(fastaFile) | !file.exists(fastaFile)){
-	message("###########################")
-	message("#No fasta file for samtools")
-	message("###########################")
-    message(helpMessage)
-    stop()
-}
-
-dir.exists <- function(paths){x = base::file.info(paths)$isdir;!is.na(x) & x}
-
-if(is.null(samPath) | dir.exists(samPath) | !file.exists(samPath)){
-	message("###########################")
-	message("#No path to samtools executable")
-	message("###########################")
-    message(helpMessage)
-    stop()
-}
-
-fastaIndex = paste0(fastaFile,".fai")
-if(!file.exists(fastaIndex)){
-    message("Genome indexation...")
-    system2(command = samPath,args = paste('faidx',fastaFile))
-    message("OK\n")
-}
-
 registerDoParallel(threads)
-CMD = paste(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=="--file="])),
+CMD = paste0(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=="--file="])),
         " --input ", normalizePath(inputFile),
         " --output ", outputFile,
-        " --SamPath ", normalizePath(samPath),
-        " --fastaGenome ", normalizePath(fastaFile),
         " --GenomeAssenbly ", genome,
         " --threads ", threads,
         " --maxLines ", maxLines,
+        if(!is.null(pathToGene)){paste0(" --geneList ",pathToGene)},
+        if(!is.null(pathToTranscript)){paste0(" --transcriptList ",pathToTranscript)},
         if(printVCF){" --VCF "},
-        if(printHead){" --header "},sep="")
+        if(printHead){" --header "})
 
 headerHelp_hg19 = c("##fileformat=VCFv4.3",
-        "##SPiP output v1.0",
+        paste0("##SPiP output v",version),
         paste("##SPiPCommand=",CMD,sep=""),
         "##assembly=GRCh37/hg19",
         "##contig=<ID=chr1,length=249250621>",
@@ -210,7 +186,7 @@ headerHelp_hg19 = c("##fileformat=VCFv4.3",
         "##contig=<ID=chrY,length=59373566>")
 
 headerHelp_hg38 = c("##fileformat=VCFv4.3",
-        "##SPiP output v1.0",
+        paste0("##SPiP output v",version),
         paste("##SPiPCommand=",CMD,sep=""),
         "##assembly=GRCh38/hg38",
         "##contig=<ID=chr1,length=248956422>",
@@ -303,6 +279,17 @@ message(CMD)
 
 #Get Ref files
 inputref = paste(scriptPath, "/RefFiles",sep="")
+
+message("Check transcriptome sequences...")
+if(!file.exists(paste(inputref,"/transcriptome_hg19.RData",sep="")) | !file.exists(paste(inputref,"/transcriptome_hg38.RData",sep=""))){
+	message("You have to install the transcriptome file in /path/to/SPiP/RefFiles/")
+    message("transcriptome_hg19.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg19.RData/download")
+    message("transcriptome_hg38.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg38.RData/download")
+    q(save="no")
+}
+message("Load transcriptome sequences...")
+load(paste0(inputref, "/transcriptome_",genome,".RData"))
+
 message("Check RefSeq database...")
 if(!file.exists(paste(inputref,"/dataRefSeqhg19.RData",sep="")) & !file.exists(paste(inputref,"/dataRefSeqhg38.RData",sep=""))){
     currentWD = getwd()
@@ -312,8 +299,18 @@ if(!file.exists(paste(inputref,"/dataRefSeqhg19.RData",sep="")) & !file.exists(p
     setwd(currentWD)
 }
 message("Load RefSeq database...")
-load(paste(inputref, "/dataRefSeq",genome,".RData",sep=""))
-load(paste(inputref, "/RefFiles.RData",sep=""))
+load(paste0(inputref, "/dataRefSeq",genome,".RData"))
+load(paste0(inputref, "/RefFiles.RData"))
+
+if(!is.null(pathToGene)){
+    geneList = readLines(pathToGene)
+    dataRefSeq = dataRefSeq[which(as.character(dataRefSeq$V13)%in%geneList),]
+}
+if(!is.null(pathToTranscript)){
+    transcriptList = readLines(pathToTranscript)
+    dataRefSeq = dataRefSeq[which(as.character(dataRefSeq$V4)%in%transcriptList),]
+}
+
 
 mint_GT=sum(as.numeric(as.vector(sub("Min.   :","",summary(ref_score_GT)[1,]))))
 maxt_GT=sum(as.numeric(as.vector(sub("Max.   :","",summary(ref_score_GT)[6,]))))
@@ -369,18 +366,6 @@ contigToChr <- function(text){
         if(chr=="chr23"){chr="chrX"}else if(chr=="chr24"){chr="chrY"}
     }
     return(chr)
-}
-
-chrIndex = read.table(fastaIndex,sep="\t",header=FALSE,colClasses = "character")
-chrIndex = chrIndex[,1]
-if(substr(chrIndex[1],1,3)=="chr"){
-    names(chrIndex) = chrIndex
-}else if(nchar(chrIndex[1])<=2){
-    names(chrIndex) = paste0("chr",chrIndex)
-}else if(substr(chrIndex[1],1,3)=="NC_"){
-    chrConvert = NULL
-    for(i in chrIndex){chrConvert = c(chrConvert,contigToChr(i))}
-    names(chrIndex) = chrConvert
 }
 
 #functions used in this pipeline
@@ -923,44 +908,18 @@ getRevSeq <- function(sequence){
     return(seqRev)
 }
 
-getSeqFromSamtools <- function(chromosome,start,end,strand,command,fastaFile){
-	posToAsk <- paste(chromosome,':',start,'-',end,sep="")
-	samtoolsArgs <- paste('faidx',fastaFile,posToAsk)
-    samtoolsSeq = system2(command, args=samtoolsArgs, stdout = TRUE, stderr=TRUE)
-    samtoolsHead = samtoolsSeq[1]
-	samtoolsSeq = samtoolsSeq[-1]
-    if(substr(samtoolsHead,1,1)==">"){
-        if(length(samtoolsSeq)>1){
-            seqDNApool=""
-            for(i in 1:length(samtoolsSeq)){
-                seqDNApool=paste(seqDNApool,samtoolsSeq[i],sep="")
-            }
-            seqDNA = seqDNApool
-        }else{
-            seqDNA = samtoolsSeq
-        }
-
-        seqDNA = toupper(seqDNA)
-        if(strand=="-"){
-            seqDNA = getRevSeq(seqDNA)
-        }
-    }else{
-        print(samtoolsSeq)
-        seqDNA="ERROR samtools"
-    }
-	return(seqDNA)
-}
-
 getSequencePhysio <- function(genome,sens,chr,start,end){
-	command = samPath
-    chrCorr = chrIndex[chr]
-	gPos=c(start,end)
-	gPos = gPos[order(gPos)]
-    seqDNA = getSeqFromSamtools(chrCorr, gPos[1], gPos[2], sens, command, fastaFile)
-    if(seqDNA=="ERROR samtools"){
-        message(paste("Request sequence caused a error:", chrCorr, gPos[1], gPos[2], sens, command, fastaFile,"\n"))
-    }
-    return(seqDNA)
+	idx = which(transcriptome_idx$chr==chr & transcriptome_idx$strand==sens & transcriptome_idx$seqStart<=start & transcriptome_idx$seqEnd>=end)
+	if(length(idx)>1){idx = idx[1]}
+	start2 = start;end2 = end
+	seqStart = transcriptome_idx$seqStart[idx]-1
+	if(sens=="-"){
+		start2=end;end2=start
+		seqStart = transcriptome_idx$seqEnd[idx]+1
+	}
+	transcript_sequence <- transcriptome_seq[idx,2]
+	seqDNA = substr(transcript_sequence,abs(start2-seqStart),abs(end2-seqStart))
+	return(seqDNA)
 }
 
 checkCalculableScore <- function(seq){
