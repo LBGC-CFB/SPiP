@@ -50,14 +50,6 @@ headerHelp = c("### SPiP output v0.6",
 
 #import librairy
 tryCatch({
-library(RCurl)
-},
-	error=function(cond) {
-		message("Here's the original error message:")
-		message(cond)
-		message("*****You need to install \'RCurl\' library\nInstall it by: install.pakages(\'RCurl\'")
-})
-tryCatch({
 library(parallel)
 },
 	error=function(cond) {
@@ -82,7 +74,6 @@ library(doParallel)
 		message("*****You need to install \'doParallel\' library\nInstall it by: install.pakages(\'doParallel\')")
 })
 
-myOpts <- curlOptions(connecttimeout = 10)
 options(scipen=50)
 samPath=NULL
 fastaFile=NULL
