@@ -11,18 +11,17 @@ SPiP is available for Windows OS at https://sourceforge.net/projects/splicing-pr
 
 * [Repository contents](#1)
 * [Install SPiP](#2)
-    * [Install Samtools](#3)
-    * [Load the human genome](#4)
-* [Run SPiP](#5)
-    * [SPiP options](#6)
-* [Authors](#7)
-* [License](#8)
+    * [Load the transcriptome files](#3)
+* [Run SPiP](#4)
+    * [SPiP options](#5)
+* [Authors](#6)
+* [License](#7)
 
 ## Repository contents<a id="1"></a>
 
 ---
 
-* SPiPv1.0: the SPiP scripts
+* SPiPv1.1: the SPiP scripts
 * testCrypt.txt: an example of input data in text format
 * testVar.vcf: an example of input data in vcf format
 * *RefFiles*: folder where are the reference files used by SPiP
@@ -43,40 +42,27 @@ install.packages("foreach")
 install.packages("doParallel")
 ```
 
-### Install Samtools<a id="3"></a>
-SPiP will use samtools to get the DNA sequences.
+### Load the transcriptome files<a id="3"></a>
 
-```shell
-cd /path/to/SPiP/
-wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
-tar xfvj samtools-1.9.tar.bz2
-cd ./samtools-1.9
-./configure --prefix=/where/to/install
-make
-make install
-```
-For more information, please see the [samtools manual](http://www.htslib.org/doc/samtools.html "tittle")
+you have to download frome sourcforge the RData files containing the transcripts sequences.
+**hg19** assembly : [transcriptome_hg19.RData](https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg19.RData/download "tittle")
+**hg38** assembly : [transcriptome_hg38.RData](https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg38.RData/download "tittle")
 
-### Load the human genome<a id="4"></a>
+Put these files in `/path/to/SPiP/RefFiles/`.
 
-Here we use the [GENCODE](https://www.gencodegenes.org/ "tittle") database, with the hg19 example:
-```shell
-wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_29/GRCh37_mapping/GRCh37.primary_assembly.genome.fa.gz -O genomehg19.fa.gz
-gunzip genomehg19.fa.gz
-/path/to/samtools faidx genomehg19.fa
-```
+NB: commands to regenerate these files are available in [getGenomeSequenceFromBSgenome.r](https://github.com/raphaelleman/SPiP/blob/master/RefFiles/getGenomeSequenceFromBSgenome.r "tittle")
 
-## Run SPiP<a id="5"></a>
+## Run SPiP<a id="4"></a>
 
 ---
 
-you can get the different argument of SPiP by `Rscript /path/to/SPiPv1.0.r --help`
+you can get the different argument of SPiP by `Rscript /path/to/SPiPv1.1.r --help`
 
 An example of SPiP run with test file [testCrypt.txt](http://gitlab.baclesse.fr/LEMRAP/spip/blob/master/testCrypt.txt "tittle"):
 
 ```shell
 cd /path/to/SPiP/
-Rscript ./SPiPv1.0.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
+Rscript ./SPiPv1.1.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
 ```
 
 In this example SPiP will generate a text file "outputTest.txt" where the predictions will be save. The scheme of this output is:
@@ -120,7 +106,7 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 | probaSSPhysioMut | 1.74991364794327e-06 | Score of natural splice site that same splice site type of the mutated cryptic after the mutation |
 | classProbaSSPhysioMut | No | Score of natural splice site that same splice site type of the mutated cryptic after the mutation (Yes: used, No: Not used) |
 
-### SPiP options <a id="6"></a>
+### SPiP options <a id="5"></a>
 
 **-I, --input** /path/to/inputFile
 
@@ -134,14 +120,6 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 
 + Genome assembly version (hg19 or hg38) [default= hg19]
 
-**-s, --SamPath** /path/to/samtools]
-
-+ Path to samtools, if you want to use Ensembl api keep this argument empty
-
-**-f, --fastaGenome** /path/to/fastaGenome
-
-+ Fasta file of genome used by samtools, see [Load the human genome](#4) section
-
 **-t, --threads** N
 
 + Number of threads used for the calculation [default= 1]
@@ -154,14 +132,22 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 
 + Show run process, *i.e.* displays progression bar tool
 
+**--geneList** /path/to/geneList.txt
+
++ You can process analysis exclusively on a gene list, available only if VCF input
+
+**--transcriptList** /path/to/transcriptList.txt
+
++ You can process analysis exclusively on a transcript list, available only if VCF input
+
 **--VCF**
 
 + Get the SPiP output in VCF format (v4.0)
 
 ```shell
 ##fileformat=VCFv4.0
-##SPiP output v1.0
-##SPiPCommand=/path/to/SPiPv1.0.r -I inputFile -O outputFile -s /path/to/samtools -f /path/to/genomeReference.fe --VCF
+##SPiP output v1.1
+##SPiPCommand=/path/to/SPiPv1.1.r -I inputFile -O outputFile --VCF
 ##assembly=GRCh37/hg19
 ##contig=<ID=chr1,length=249250621>
 ##contig=<ID=chr2,length=243199373>
@@ -265,7 +251,7 @@ chr1	15765825	NM_007272:g.15765825:G>A	G	A	.	.	Interpretation="NTR"|InterConfide
     ##INFO=<ID=probaSSPhysioMut,Number=1,Type=Float,Description=\"Score of the natural splice site (same splice type of cryptic site) after the mutation\">
     ##INFO=<ID=classProbaSSPhysioMut,Number=1,Type=String,Description=\"Use of the natural splice site (same splice type of cryptic site) after the mutation (Yes/No)\">
 ```
-## Authors <a id="7"></a>
+## Authors <a id="6"></a>
 
 
 * Raphael Leman - [raphaelleman](https://github.com/raphaelleman/ "tittle")
@@ -274,7 +260,7 @@ chr1	15765825	NM_007272:g.15765825:G>A	G	A	.	.	Interpretation="NTR"|InterConfide
 > **Cite as:** SPiP: a Splicing Prediction Pipeline addressing the diversity of splice alterations validated on a diagnostic set of 3,048 exonic and intronic variants.
 **Raphaël Leman**, Béatrice Parfait, Dominique Vidaud, Emmanuelle Girodon, Laurence Pacot, Gérald Legac, Chandran Ka, Claude Ferec, Yann Fichou, Céline Quesnelle, Etienne Muller, Dominique Vaur, Laurent Castera, Agathe Ricou, Hélène Tubeuf, Omar Soukarieh, Pascaline Gaildrat, Florence Riant, Marine Guillaud-Bataille, Sandrine M. Caputo, Virginie Caux-Moncoutier, Nadia Boutry-Kryza, Françoise Bonnet-Dorion, Ines Schultz, Maria Rossing, Michael T. Parsons, Amanda B. Spurdle, Thierry Frebourg, Alexandra Martins, Claude Houdayer, Sophie Krieger, [in preparation](https://www.researchgate.net/publication/339817193_SPiP_a_Splicing_Prediction_Pipeline_addressing_the_diversity_of_splice_alterations_validated_on_a_diagnostic_set_of_3048_exonic_and_intronic_variants "tittle")
 
-## License <a id="8"></a>
+## License <a id="7"></a>
 
 
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/raphaelleman/SPiP/blob/master/LICENSE "tittle") file for details
