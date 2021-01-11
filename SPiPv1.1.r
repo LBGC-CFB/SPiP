@@ -291,10 +291,19 @@ if(!file.exists(paste(inputref,"/transcriptome_hg19.RData",sep="")) | !file.exis
         message(paste("Your transcriptome file:",pathToTranscriptome))
         load(pathToTranscriptome)
     }else{
-        message("You have to install the transcriptome file in /path/to/SPiP/RefFiles/")
-        message("transcriptome_hg19.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg19.RData/download")
-        message("transcriptome_hg38.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg38.RData/download")
-        q(save="no")
+        tryCatch({
+            download.file(url = "https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg19.RData/download",
+                            destfile = paste0(inputref,"/transcriptome_hg19.RData"),mode="wb",method="auto")
+            download.file(url = "https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg38.RData/download",
+                            destfile = paste0(inputref,"/transcriptome_hg38.RData"),mode="wb",method="auto")
+        },
+        error=function(cond) {
+            message(cond)
+            message("You have to install the transcriptome file in /path/to/SPiP/RefFiles/")
+            message("transcriptome_hg19.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg19.RData/download")
+            message("transcriptome_hg38.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg38.RData/download")
+            q(save="no")
+        })
     }
 }
 message("Load transcriptome sequences...")
