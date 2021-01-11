@@ -305,9 +305,10 @@ if(!file.exists(paste(inputref,"/transcriptome_hg19.RData",sep="")) | !file.exis
             q(save="no")
         })
     }
+}else{
+    message("Load transcriptome sequences...")
+    load(paste0(inputref, "/transcriptome_",genome,".RData"))
 }
-message("Load transcriptome sequences...")
-load(paste0(inputref, "/transcriptome_",genome,".RData"))
 
 message("Check RefSeq database...")
 if(!file.exists(paste(inputref,"/dataRefSeqhg19.RData",sep="")) & !file.exists(paste(inputref,"/dataRefSeqhg38.RData",sep=""))){
