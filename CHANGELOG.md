@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 ## Unrelease
 
 ## [1.1] - 2021-01-08
-- Use RData files instead of samtolls to get sequences
+- Use RData files instead of samtools to get sequences
 - Add two options to select gene or transcript to analyze
 
 ## [1.0] - 2020-05-15
