@@ -1224,7 +1224,7 @@ getSplitTableSeq <- function(varName, chr, varPos, sens, seqPhysio, seqMutated, 
 
 	relPosAccPhyFilt = relPosAccPhy[relPosAccPhy >= 134 & relPosAccPhy <= 201]
 	relPosDonPhyFilt = relPosDonPhy[relPosDonPhy >= 99 & relPosDonPhy <= 166]
-	relPosAccMutFilt = relPosAccMut[relPosAccMut >= 137 & relPosAccMut <= 153]
+	relPosAccMutFilt = relPosAccMut[relPosAccMut >= 146 & relPosAccMut <= 162]
 	relPosDonMutFilt = relPosDonMut[relPosDonMut >= 144 & relPosDonMut <= 157]
 
 	seqConsAccPhy = substr(rep(seqPhysio,length(relPosAccPhyFilt)),relPosAccPhyFilt-18,relPosAccPhyFilt+4)
