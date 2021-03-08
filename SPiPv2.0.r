@@ -1729,10 +1729,11 @@ getGlobaInterpretation <- function(SPiCEinterpret, RegType, deltaMES, mutInPBare
 	return(interpretFinal)
 }
 
-getVPP <- function(prediction){
-    VPP = round(VPPtable$VPP[VPPtable$prediction==prediction]*100,2)
-    ICmin = round(VPPtable$ICmin[VPPtable$prediction==prediction]*100,2)
-    ICmax = round(VPPtable$ICmax[VPPtable$prediction==prediction]*100,2)
+getVPP <- function(prediction, score = 0){
+    tmpVPPtable = VPPtable[VPPtable$score==prediction,]
+    VPP = round(tmpVPPtable$propPos[score>=tmpVPPtable$minScore & score<=tmpVPPtable$maxScore]*100,2)
+    ICmin = round(tmpVPPtable$confint95a[score>=tmpVPPtable$minScore & score<=tmpVPPtable$maxScore]*100,2)
+    ICmax = round(tmpVPPtable$confint95b[score>=tmpVPPtable$minScore & score<=tmpVPPtable$maxScore]*100,2)
     if(VPP<10){VPP=paste0("0",VPP)}
     if(ICmin<10){ICmin=paste0("0",ICmin)}
     if(ICmax<10){ICmax=paste0("0",ICmax)}
@@ -1760,13 +1761,24 @@ getVPN <- function(distSS,regType){
     return(probaInter)
 }
 
-getPredConfident <- function(interpretFinal, RegType, distSS){
+getPredConfident <- function(interpretFinal, RegType, distSS, SPiCE, ESR, MES, cryptic){
 	#proba from SNP + UV analysis (N = 99,616)
 	probaInter = -1
     if(length(grep("+",interpretFinal,fixed = TRUE))>0){interpretFinal = unlist(strsplit(interpretFinal," + ",fixed = TRUE))[1]}
-
     if(substr(interpretFinal,1,5)=="Alter"){
-        probaInter = getVPP(interpretFinal)
+        if(interpretFinal=="Alter by SPiCE"){
+			probaInter = getVPP("SPiCE",SPiCE)
+        }else if(interpretFinal=="Alter ESR"){
+			probaInter = getVPP("ESR",ESR)
+		}else if(interpretFinal=="Alter by MES (Poly TC)"){
+			probaInter = getVPP("MES",MES)
+		}else if(interpretFinal=="Alter BP"){
+			probaInter = getVPP("BP")
+		}else if(interpretFinal=="Alter by create New splice site"){
+			probaInter = getVPP("cryptic",cryptic)
+		}else if(interpretFinal=="Alter by create New Exon"){
+			probaInter = getVPP("exon",cryptic)
+		}
     }else if(substr(interpretFinal,1,3)=="NTR"){
         probaInter = getVPN(distSS[1],RegType)
     }
@@ -1898,7 +1910,7 @@ getOutput <- function(){
 	}
 	interpretation <- getGlobaInterpretation(SPiCEinter_2thr, RegType, deltaMES, mutInPBareaBPP, classProbaCryptMut, classProbaCryptWT , distSS[1], ESRscore)
 	Interpretation <- interpretation
-	InterConfident <- getPredConfident(interpretation, RegType, distSS)
+	InterConfident <- getPredConfident(interpretation, RegType, distSS, SPiCEproba, ESRscore, deltaMES, probaCryptMut)
     ExonInfo <- getExonInfo(transcript,varPos[1])
     result <<- c(Interpretation, InterConfident, chr, strand, gNomen, varType, ntChange, ExonInfo, transcript, gene, NearestSS, DistSS, RegType, seqPhysio, seqMutated,
         SPiCEproba, SPiCEinter_2thr, deltaMES, mutInPBarea, deltaESRscore, posCryptMut, sstypeCryptMut, probaCryptMut,
