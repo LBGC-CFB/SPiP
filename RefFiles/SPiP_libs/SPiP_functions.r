@@ -1,5 +1,5 @@
 tryCatch({
-source(paste0(installDir,"SPiP_sequences.r"))
+source(paste0(path2scripts,"SPiP_sequences.r"))
 },
     error=function(cond) {
         message("Here's the original error message:")
@@ -9,7 +9,7 @@ source(paste0(installDir,"SPiP_sequences.r"))
 )
 
 tryCatch({
-source(paste0(installDir,"SPiP_scores.r"))
+source(paste0(path2scripts,"SPiP_scores.r"))
 },
     error=function(cond) {
         message("Here's the original error message:")
@@ -18,168 +18,45 @@ source(paste0(installDir,"SPiP_scores.r"))
     }
 )
 
-getNearestPos <- function(sens, varPos ,posDon, posAcc){
-    varPos1 = varPos[1]
-	distSS2 = NULL
-	varPos2 = NULL
-	if(length(varPos)==2){
-		varPos2 = varPos[2]
-	}
-	posDon = posDon[order(posDon)]
-	posAcc = posAcc[order(posAcc)]
+getPosSSphysio <- function(transcrit){
 
-	minPosDon = min(abs(posDon-varPos1 ))
-	minPosAcc = min(abs(posAcc-varPos1 ))
-
-	if(minPosDon<minPosAcc){
-		SstypePhy <<- "donor"
-		if(length( posDon[posDon==(varPos1 + min(abs(posDon-varPos1 )))])==0){
-			nearestPosDon <-posDon[posDon==(varPos1 - min(abs(posDon-varPos1 )))]
-		}else{
-			nearestPosDon <-posDon[posDon==(varPos1 + min(abs(posDon-varPos1 )))]
-		}
-
-		if(sens=="+"){
-			distSS1 <<- varPos1 - nearestPosDon
-			if(length(varPos)==2){
-				distSS2 = varPos2 - nearestPosDon
-			}
-
-			if(varPos1 <= nearestPosDon){
-				nearestPosAcc = posAcc[which(posDon==nearestPosDon)-1]
-				distSS1 <<- distSS1 -1
-                if(abs(distSS1)<=120){
-                    RegType <<- "ExonESR"
-                }else{
-                    RegType <<- "Exon"
-                }
-				if(length(varPos)==2){
-					distSS2 = distSS2 -1
-				}
-			}else{
-				nearestPosAcc = posAcc[which(posDon==nearestPosDon)]
-                if(abs(distSS1)<=150){
-                    RegType <<- "Intron"
-                }else{
-                    RegType <<- "DeepIntron"
-                }
-			}
-		}else{
-			distSS1 <<- nearestPosDon - varPos1+1
-			if(length(varPos)==2){
-				distSS2 = nearestPosDon - varPos2+1
-			}
-			if(varPos1 <= nearestPosDon){
-				nearestPosAcc = posAcc[which(posDon==nearestPosDon)]
-                if(abs(distSS1)<=150){
-                    RegType <<- "Intron"
-                }else{
-                    RegType <<- "DeepIntron"
-                }
-			}else{
-				nearestPosAcc = posAcc[which(posDon==nearestPosDon)+1]
-				distSS1 <<- distSS1 -1
-                if(abs(distSS1)<=120){
-                    RegType <<- "ExonESR"
-                }else{
-                    RegType <<- "Exon"
-                }
-				if(length(varPos)==2){
-					distSS2 = distSS2 -1
-				}
-			}
-		}
-		if(is.null(distSS2)){
-			if(distSS1>=(-3) & distSS1<=(6)){
-				RegType <<- paste(RegType,"Cons",sep="")
-			}
-		}else{
-			if((distSS1>=(-3) & distSS1<=6) | (distSS2>=(-3) & distSS2<=6) | (distSS1<(-3) & distSS2>6)){
-				RegType <<- paste(RegType,"Cons",sep="")
-			}
-		}
+	if(dim(dataRefSeq[dataRefSeq$V4==transcrit,])[1]==0){
+		paste("I don't find the transcript:",transcrit,"in the Refseq database")
 	}else{
-		SstypePhy <<- "acceptor"
-		if(length( posAcc[posAcc==(varPos1 + min(abs(posAcc-varPos1 )))])==0){
-			nearestPosAcc <-posAcc[posAcc==(varPos1 - min(abs(posAcc-varPos1 )))]
-		}else{
-			nearestPosAcc <-posAcc[posAcc==(varPos1 + min(abs(posAcc-varPos1 )))]
+
+		chr <<- as.character(dataRefSeq[dataRefSeq$V4==transcrit,1])
+		sens <<- as.character(dataRefSeq[dataRefSeq$V4==transcrit,6])
+
+	if(sens=="+"){
+		posStart=dataRefSeq[dataRefSeq$V4==transcrit,2]
+		tailleCum=dataRefSeq[dataRefSeq$V4==transcrit,12]
+		tailleCum=strsplit(as.character(tailleCum),split=",")
+		tailleCum=as.numeric(unlist(tailleCum))
+		posAcc <<- posStart+tailleCum
+		taille=dataRefSeq[dataRefSeq$V4==transcrit,11]
+		taille=strsplit(as.character(taille),split=",")
+		taille=as.numeric(unlist(taille))
+		posDon <<- posAcc+taille
+		if(length(posDon)>1 & length(posAcc)>1){
+			posDon <<- posDon[-length(posDon)]
+			posAcc <<- posAcc[-1]
 		}
-		if(sens=="+"){
-			distSS1 <<- varPos1 - nearestPosAcc-1
-			if(length(varPos)==2){
-				distSS2 = varPos2 - nearestPosAcc-1
-			}
-			if(varPos1 <= nearestPosAcc){
-				nearestPosDon = posDon[which(posAcc==nearestPosAcc)]
-                if(abs(distSS1)<=150){
-                    RegType <<- "Intron"
-                }else{
-                    RegType <<- "DeepIntron"
-                }
-			}else{
-				nearestPosDon = posDon[which(posAcc==nearestPosAcc)+1]
-                distSS1 <<- distSS1 +1
-                if(abs(distSS1)<=120){
-                    RegType <<- "ExonESR"
-                }else{
-                    RegType <<- "Exon"
-                }
-				if(length(varPos)==2){
-					distSS2 = distSS2 + 1
-				}
-			}
-		}else{
-			distSS1 <<- nearestPosAcc - varPos1
-			if(length(varPos)==2){
-				distSS2 = nearestPosAcc - varPos2
-			}
-			if(varPos1 <= nearestPosAcc){
-				nearestPosDon = posDon[which(posAcc==nearestPosAcc)-1]
-                distSS1 <<- distSS1 +1
-                if(abs(distSS1)<=120){
-                    RegType <<- "ExonESR"
-                }else{
-                    RegType <<- "Exon"
-                }
-				if(length(varPos)==2){
-					distSS2 = distSS2 + 1
-				}
-			}else{
-				nearestPosDon = posDon[which(posAcc==nearestPosAcc)]
-                if(abs(distSS1)<=150){
-                    RegType <<- "Intron"
-                }else{
-                    RegType <<- "DeepIntron"
-                }
-			}
-		}
-		if(is.null(distSS2)){
-			if(distSS1>=(-12) & distSS1<=2){
-				RegType <<- paste(RegType,"Cons",sep="")
-			}
-			if (distSS1>=(-20) & distSS1<=(-13)){
-				RegType <<- paste(RegType,"PolyTC",sep="")
-			}
-			if (distSS1>=(-44) & distSS1<=(-18)){
-				RegType <<- paste(RegType,"BP",sep="")
-			}
-		}else{
-			if((distSS1>=(-12) & distSS1<=2) | (distSS2>=(-12) & distSS2<=2) | (distSS1<(-12) & distSS2>2)){
-				RegType <<- paste(RegType,"Cons",sep="")
-			}
-			if (distSS1>=(-20) & distSS1<=(-13) | (distSS2>=(-20) & distSS2<=(-13)) | (distSS1<(-20) & distSS2>(-13))){
-				RegType <<- paste(RegType,"PolyTC",sep="")
-			}
-			if (distSS1>=(-44) & distSS1<=(-18) | distSS2>=(-44) & distSS2<=(-18) | (distSS1<(-44) & distSS2>(-18))){
-				RegType <<- paste(RegType,"BP",sep="")
-			}
+	}else if(sens=="-"){
+		posEnd=dataRefSeq[dataRefSeq$V4==transcrit,2]
+		tailleCum=dataRefSeq[dataRefSeq$V4==transcrit,12]
+		tailleCum=strsplit(as.character(tailleCum),split=",")
+		tailleCum=as.numeric(unlist(tailleCum))
+		posDon <<- posEnd+tailleCum
+		taille=dataRefSeq[dataRefSeq$V4==transcrit,11]
+		taille=strsplit(as.character(taille),split=",")
+		taille=as.numeric(unlist(taille))
+		posAcc <<- posDon+taille
+		if(length(posDon)>1 & length(posAcc)>1){
+			posDon <<- posDon[-1]
+			posAcc <<- posAcc[-length(posAcc)]
 		}
 	}
-
-	distSS <<- distSS1
-	distSS2 <<- distSS2
-	nearestPosAll <<- as.numeric(na.omit(c(nearestPosDon,nearestPosAcc)))
+	}
 }
 
 getNearestPos <- function(sens, varPos ,posDon, posAcc){
@@ -1512,5 +1389,3 @@ readVCF <- function(dataLine,i){
     }
     result <<- list(variant)
 }
-
-
