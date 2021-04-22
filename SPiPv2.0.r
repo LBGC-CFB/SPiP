@@ -50,6 +50,15 @@ library(doParallel)
 		message("*****You need to install \'doParallel\' library\nInstall it by: install.pakages(\'doParallel\')")
 })
 
+tryCatch({
+library(randomForest)
+},
+	error=function(cond) {
+		message("Here's the original error message:")
+		message(cond)
+		message("*****You need to install \'randomForest\' library\nInstall it by: install.pakages(\'randomForest\')")
+})
+
 message("
       _.-'''-,
     .'        `\\
@@ -222,10 +231,12 @@ headerHelp_hg38 = c("##fileformat=VCFv4.3",
 headerHelp = c("##ALT=<ID=*,Description=\"Represents allele(s) other than observed.\">",
                 "##INFO=<ID=Interpretation,Number=1,Type=String,Description=\"Overall prediction of SPiP\">",
                 "##INFO=<ID=InterConfident,Number=1,Type=String,Description=\"Probability of splicing alteration with CI_95%, estimated from mutations 53,048 mutations\">",
+                "##INFO=<ID=SPiPscore,Number=1,Type=Float,Description=\"SPiP score (random forest)\">",
                 "##INFO=<ID=strand,Number=1,Type=String,Description=\"Strand of the transcripts\">",
                 "##INFO=<ID=varType,Number=1,Type=String,Description=\"Type of variant\">",
                 "##INFO=<ID=ntChange,Number=1,Type=String,Description=\"Nucleotides variation\">",
-                "##INFO=<ID=ExonInfo,Number=1,Type=String,Description=\"Number and size of Exon/Intron\">",
+                "##INFO=<ID=ExonInfo,Number=1,Type=String,Description=\"Number of Exon/Intron\">",
+                "##INFO=<ID=exonSize,Number=1,Type=Integer,Description=\"Size of Exon/Intron\">",
                 "##INFO=<ID=transcript,Number=1,Type=String,Description=\"Transcript (RefSeq)\">",
                 "##INFO=<ID=gene,Number=1,Type=String,Description=\"Gene symbol (RefSeq)\">",
                 "##INFO=<ID=NearestSS,Number=1,Type=String,Description=\"Nearest splice site to the mutation\">",
@@ -234,6 +245,7 @@ headerHelp = c("##ALT=<ID=*,Description=\"Represents allele(s) other than observ
                 "##INFO=<ID=SPiCEproba,Number=1,Type=Float,Description=\"SPiCE score\">",
                 "##INFO=<ID=SPiCEinter_2thr,Number=1,Type=String,Description=\"Classes of SPiCE (low, medium, high)\">",
                 "##INFO=<ID=deltaMES,Number=1,Type=Float,Description=\"Delta score of MES\">",
+                "##INFO=<ID=BP,Number=1,Type=Integer,Description=\"1 if variant in BP motif, 0 else\">",
                 "##INFO=<ID=mutInPBarea,Number=1,Type=String,Description=\"Mutation in branch point\">",
                 "##INFO=<ID=deltaESRscore,Number=1,Type=Float,Description=\"Score of deltaESRscore\">",
                 "##INFO=<ID=posCryptMut,Number=1,Type=Integer,Description=\"Postion of mutated cryptic splice site\">",
@@ -300,6 +312,9 @@ if(!file.exists(paste(inputref,"/transcriptome_hg19.RData",sep="")) | !file.exis
 message("Load transcriptome sequences...")
 load(paste0(inputref, "/transcriptome_",genome,".RData"))
 
+message("Load SPiP model...")
+load(paste0(inputref, "/model.RData"))
+
 message("Load VPP table...")
 VPPtable = read.table(paste0(inputref, "/VPP_table.txt"),sep="\t",dec=",",header=TRUE)
 
@@ -326,7 +341,6 @@ if(!is.null(pathToTranscript)){
     transcriptList = readLines(pathToTranscript)
     dataRefSeq = dataRefSeq[which(as.character(dataRefSeq$V4)%in%transcriptList),]
 }
-
 
 mint_GT=sum(as.numeric(as.vector(sub("Min.   :","",summary(ref_score_GT)[1,]))))
 maxt_GT=sum(as.numeric(as.vector(sub("Max.   :","",summary(ref_score_GT)[6,]))))
@@ -373,6 +387,15 @@ names(me2x5) <- as.character(ME2x5$V1.1)
 
 inverseDic <- data.frame(V1 = c('T','G','C','A','N'),row.names = c('A','C','G','T','N'))
 inverseDic$V1 <- as.character(inverseDic$V1)
+RegTypeToNumber <- data.frame(V1 = c(1:11),
+						row.names = c("DeepIntron", "Exon",
+						"ExonESR", "ExonESRCons", "Intron",
+						"IntronBP", "IntronCons", "IntronConsPolyTC",
+						"IntronConsPolyTCBP", "IntronPolyTC",
+						"IntronPolyTCBP"))
+
+thToSPiPexon = 0.18
+thToSPiPintron = 0.035
 
 contigToChr <- function(text){
     text1=unlist(strsplit(text, ".", fixed = TRUE))[1]
@@ -665,16 +688,12 @@ getExonInfo <- function(transcrit,posVar){
 		dataConvert=data.frame(idEx=c(1:length(tailleExon )),lenEx=tailleExon,gStart=posAcc,gEnd=posDon)
 
 		if(nrow(dataConvert[dataConvert$gStart<=posVar & dataConvert$gEnd>=posVar,])>=1){
-			ExonInfo = paste("Exon ",
-					dataConvert$idEx[dataConvert$gStart<=posVar & dataConvert$gEnd>=posVar]," (",
-					dataConvert$lenEx[dataConvert$gStart<=posVar & dataConvert$gEnd>=posVar],")",
-					sep="")
+			ExonInfo = c(paste0("Exon ", dataConvert$idEx[dataConvert$gStart<=posVar & dataConvert$gEnd>=posVar]),
+					dataConvert$lenEx[dataConvert$gStart<=posVar & dataConvert$gEnd>=posVar])
 		}else{
-			ExonInfo = paste("Intron ",
-							dataConvert$idEx[which(dataConvert$gEnd>=posVar)[1]-1]," (",
-							abs(dataConvert$gEnd[which(dataConvert$gEnd>=posVar)[1]-1]-
-								dataConvert$gStart[which(dataConvert$gEnd>=posVar)[1]])-1,")",
-							sep="")
+			ExonInfo = c(paste0("Intron ", dataConvert$idEx[which(dataConvert$gEnd>=posVar)[1]-1]),
+            				abs(dataConvert$gEnd[which(dataConvert$gEnd>=posVar)[1]-1]-
+								dataConvert$gStart[which(dataConvert$gEnd>=posVar)[1]])-1)
 		}
 	}else if(sens=="-"){
 
@@ -686,16 +705,12 @@ getExonInfo <- function(transcrit,posVar){
 		dataConvert=data.frame(idEx=c(length(tailleExon):1),lenEx=tailleExon,gStart=posAcc,gEnd=posDon)
 
 		if(nrow(dataConvert[dataConvert$gStart>=posVar & dataConvert$gEnd<=posVar,])>=1){
-			ExonInfo = paste("Exon ",
-					dataConvert$idEx[dataConvert$gStart>=posVar & dataConvert$gEnd<=posVar]," (",
-					dataConvert$lenEx[dataConvert$gStart>=posVar & dataConvert$gEnd<=posVar],")",
-					sep="")
+			ExonInfo = c(paste0("Exon ", dataConvert$idEx[dataConvert$gStart>=posVar & dataConvert$gEnd<=posVar]),
+					dataConvert$lenEx[dataConvert$gStart>=posVar & dataConvert$gEnd<=posVar])
 		}else{
-			ExonInfo = paste("Intron ",
-							dataConvert$idEx[which(dataConvert$gEnd>=posVar)[1]]," (",
+			ExonInfo = c(paste0("Intron ", dataConvert$idEx[which(dataConvert$gEnd>=posVar)[1]]),
 							abs(dataConvert$gEnd[which(dataConvert$gEnd>=posVar)[1]]-
-								dataConvert$gStart[which(dataConvert$gEnd>=posVar)[1]-1])-1,")",
-							sep="")
+								dataConvert$gStart[which(dataConvert$gEnd>=posVar)[1]-1])-1)
 		}
 	}
 	return(ExonInfo)
@@ -1340,7 +1355,7 @@ getSplitTableSeq <- function(varName, chr, varPos, sens, seqPhysio, seqMutated, 
 
 getDeltaESRseq <- function(SstypePhy, distSS, seqPhysio, seqMutated){
 	if(abs(distSS)>120){
-		ESRscore <<- NA
+		ESRscore <<- 10
 	}else{
 		seqESRwt = substr(seqPhysio,146,156)
 		seqESRmut = substr(seqMutated,146,156)
@@ -1693,99 +1708,7 @@ getVariantInfo <- function(varID){
 	ntChange <<- ntChange
 }
 
-getGlobaInterpretation <- function(SPiCEinterpret, RegType, deltaMES, mutInPBareaBPP, classProbaMut, classProbaCryptWT, distSS, deltaESR){
-	interpretFinal = NULL
-	if(SPiCEinterpret=="high" | SPiCEinterpret=="medium"){
-		interpretFinal = c(interpretFinal,"Alter by SPiCE")
-	}
-	if (length(grep("PolyTC",RegType ))>0 & deltaMES<(-0.15)){
-		interpretFinal = c(interpretFinal,"Alter by MES (Poly TC)")
-	}
-	if (length(grep("BP",RegType ))>0 & mutInPBareaBPP!="No"){
-        if(mutInPBareaBPP=="No BPP-predicted BP in intron"){
-            interpretFinal = c(interpretFinal,"Pos BP unknown")
-        }else{
-            interpretFinal = c(interpretFinal,"Alter BP")
-        }
-	}
-    if (classProbaMut=="Yes"){
-        if(abs(distSS)>=150 & length(grep("Intron",RegType ))>0) {
-            interpretFinal =c(interpretFinal, "Alter by create New Exon")
-            if(classProbaCryptWT=="Yes") {
-                interpretFinal = NULL
-            }
-        }else{
-            interpretFinal = c(interpretFinal,"Alter by create New splice site")
-        }
-	}
-    if (length(grep("Exon",RegType ))>0 & abs(distSS)<120 & deltaESR<(-0.415)){
-		interpretFinal = c(interpretFinal,"Alter ESR")
-	}
-	if(is.null(interpretFinal)){
-		interpretFinal = "NTR"
-	}else if (length(interpretFinal)>1){
-		interpretFinal = paste(interpretFinal, collapse=" + ")
-	}
-	return(interpretFinal)
-}
-
-getVPP <- function(prediction, score = 0){
-    tmpVPPtable = VPPtable[VPPtable$score==prediction,]
-    VPP = round(tmpVPPtable$propPos[score>=tmpVPPtable$minScore & score<=tmpVPPtable$maxScore]*100,2)
-    ICmin = round(tmpVPPtable$confint95a[score>=tmpVPPtable$minScore & score<=tmpVPPtable$maxScore]*100,2)
-    ICmax = round(tmpVPPtable$confint95b[score>=tmpVPPtable$minScore & score<=tmpVPPtable$maxScore]*100,2)
-    if(VPP<10){VPP=paste0("0",VPP)}
-    if(ICmin<10){ICmin=paste0("0",ICmin)}
-    if(ICmax<10){ICmax=paste0("0",ICmax)}
-    probaInter = paste0(VPP," % [",ICmin," % - ",ICmax," %]")
-    return(probaInter)
-}
-
-getVPN <- function(distSS,regType){
-    if(length(grep("Intron",regType))>0 & distSS>0){
-        tmpVPNtable = VPNtable[VPNtable$region=="intron5p",]
-    }else if(length(grep("Intron",regType))>0 & distSS<0){
-        tmpVPNtable = VPNtable[VPNtable$region=="intron3p",]
-    }else if(length(grep("Exon",regType))>0 & distSS>0){
-        tmpVPNtable = VPNtable[VPNtable$region=="exon3p",]
-    }else if(length(grep("Exon",regType))>0 & distSS<0){
-        tmpVPNtable = VPNtable[VPNtable$region=="exon5p",]
-    }
-    VPN = round(tmpVPNtable$VPN[distSS>tmpVPNtable$rangeInf & distSS<=tmpVPNtable$rangeSupp]*100,2)
-    ICmin = round(tmpVPNtable$confint95a[distSS>tmpVPNtable$rangeInf & distSS<=tmpVPNtable$rangeSupp]*100,2)
-    ICmax = round(tmpVPNtable$confint95b[distSS>tmpVPNtable$rangeInf & distSS<=tmpVPNtable$rangeSupp]*100,2)
-    if(VPN<10){VPN=paste0("0",VPN)}
-    if(ICmin<10){ICmin=paste0("0",ICmin)}
-    if(ICmax<10){ICmax=paste0("0",ICmax)}
-    probaInter = paste0(VPN," % [",ICmin," % - ",ICmax," %]")
-    return(probaInter)
-}
-
-getPredConfident <- function(interpretFinal, RegType, distSS, SPiCE, ESR, MES, cryptic){
-	#proba from SNP + UV analysis (N = 99,616)
-	probaInter = -1
-    if(length(grep("+",interpretFinal,fixed = TRUE))>0){interpretFinal = unlist(strsplit(interpretFinal," + ",fixed = TRUE))[1]}
-    if(substr(interpretFinal,1,5)=="Alter"){
-        if(interpretFinal=="Alter by SPiCE"){
-			probaInter = getVPP("SPiCE",SPiCE)
-        }else if(interpretFinal=="Alter ESR"){
-			probaInter = getVPP("ESR",ESR)
-		}else if(interpretFinal=="Alter by MES (Poly TC)"){
-			probaInter = getVPP("MES",MES)
-		}else if(interpretFinal=="Alter BP"){
-			probaInter = getVPP("BP")
-		}else if(interpretFinal=="Alter by create New splice site"){
-			probaInter = getVPP("cryptic",cryptic)
-		}else if(interpretFinal=="Alter by create New Exon"){
-			probaInter = getVPP("exon",cryptic)
-		}
-    }else if(substr(interpretFinal,1,3)=="NTR"){
-        probaInter = getVPN(distSS[1],RegType)
-    }
-	return (probaInter)
-}
-
-getOutput <- function(){
+getAnnotation <- function(){
 	getPosSSphysio(transcript)
 	getNearestPos(sens, varPos ,posDon, posAcc)
 
@@ -1798,7 +1721,7 @@ getOutput <- function(){
 	tmpTableSeq <<- getSplitTableSeq(varID, chr, varPos[1], sens, seqPhysio, seqMutated, posDon, posAcc, nearestPosAll,varType)
 
 	if(as.numeric(gregexpr("Exon",RegType))<0){
-		ESRscore = NA
+		ESRscore = 10
 	}else{
 		ESRscore = getDeltaESRseq(SstypePhy, distSS, seqPhysio, seqMutated)
 	}
@@ -1836,16 +1759,13 @@ getOutput <- function(){
 	if(length(varPos)==1){
 		DistSS <- distSS
 	}else if(length(varPos)==2){
-		if(distSS[1]==distSS2){
-			DistSS <- distSS[1]
-		}else{
-			DistSS <- paste(distSS, distSS2,sep="_ ")
-		}
+		DistSS <- distSS[1]
 	}else{
 		print("erreur varpos")
 	}
 	gene <- as.character(dataRefSeq$V13[dataRefSeq$V4==transcript])
 	mutInPBarea <- mutInPBareaBPP
+    if(is.na(mutInPBareaBPP)){BP <- 0}else if(mutInPBareaBPP=="No"){BP <- 0}else{BP <- 1}
 	deltaESRscore <- ESRscore
 
 	if(nrow(tmpTableSeqNoPhyMut)>0){
@@ -1908,14 +1828,198 @@ getOutput <- function(){
 		probaSSPhysioMut <- 0
 		classProbaSSPhysioMut <- "No"
 	}
-	interpretation <- getGlobaInterpretation(SPiCEinter_2thr, RegType, deltaMES, mutInPBareaBPP, classProbaCryptMut, classProbaCryptWT , distSS[1], ESRscore)
-	Interpretation <- interpretation
-	InterConfident <- getPredConfident(interpretation, RegType, distSS, SPiCEproba, ESRscore, deltaMES, probaCryptMut)
-    ExonInfo <- getExonInfo(transcript,varPos[1])
-    result <<- c(Interpretation, InterConfident, chr, strand, gNomen, varType, ntChange, ExonInfo, transcript, gene, NearestSS, DistSS, RegType, seqPhysio, seqMutated,
-        SPiCEproba, SPiCEinter_2thr, deltaMES, mutInPBarea, deltaESRscore, posCryptMut, sstypeCryptMut, probaCryptMut,
-        classProbaCryptMut, nearestSStoCrypt, nearestPosSStoCrypt, nearestDistSStoCrypt, posCryptWT, probaCryptWT,
-        classProbaCryptWT, posSSPhysio, probaSSPhysio, classProbaSSPhysio, probaSSPhysioMut, classProbaSSPhysioMut)
+    tmp_ExonInfo <- getExonInfo(transcript,varPos[1])
+    ExonInfo <- tmp_ExonInfo[1]
+    exonSize <- tmp_ExonInfo[2]
+    result <- c(chr, strand, gNomen, varType, ntChange, ExonInfo, exonSize, transcript,
+        gene, NearestSS, DistSS, RegType, seqPhysio, seqMutated, SPiCEproba, SPiCEinter_2thr, deltaMES, BP, mutInPBarea,
+        deltaESRscore, posCryptMut, sstypeCryptMut, probaCryptMut, classProbaCryptMut, nearestSStoCrypt, nearestPosSStoCrypt,
+        nearestDistSStoCrypt, posCryptWT, probaCryptWT, classProbaCryptWT, posSSPhysio, probaSSPhysio, classProbaSSPhysio,
+        probaSSPhysioMut, classProbaSSPhysioMut)
+    return(result)
+}
+
+getOutputToSPiPmodel <- function(varID,i){
+    if(printProcess){setTxtProgressBar(pb2, i)}
+    if(as.numeric(regexpr('no transcript',varID))>0|
+        as.numeric(regexpr('mutUnknown',varID))>0)
+    {
+            return(rep("NA",35))
+    }else{
+        tryCatch({
+            getVariantInfo(as.character(varID))
+            tmp <- getAnnotation()
+                return(tmp)
+        },
+        error=function(cond) {
+            message(paste("Variant caused a error:", varID))
+            return(rep("NA",35))
+        })
+    }
+}
+
+getGlobaInterpretation <- function(SPiCEinterpret, RegType, deltaMES, mutInPBareaBPP, classProbaMut, classProbaCryptWT, distSS, deltaESR){
+	if(SPiCEinterpret=="."){
+		interpretFinal = NA
+	}else{
+		interpretFinal = NULL
+		if(SPiCEinterpret=="high" | SPiCEinterpret=="medium"){
+			interpretFinal = c(interpretFinal,"Alter by SPiCE")
+		}
+		if (length(grep("PolyTC",RegType ))>0 & deltaMES<(-0.15)){
+			interpretFinal = c(interpretFinal,"Alter by MES (Poly TC)")
+		}
+		if (length(grep("BP",RegType ))>0 & mutInPBareaBPP!="No"){
+			if(mutInPBareaBPP=="No BPP-predicted BP in intron"){
+				interpretFinal = c(interpretFinal,"Pos BP unknown")
+			}else{
+				interpretFinal = c(interpretFinal,"Alter BP")
+			}
+		}
+		if (classProbaMut=="Yes"){
+			if(abs(distSS)>=150 & length(grep("Intron",RegType ))>0) {
+				interpretFinal =c(interpretFinal, "Alter by create New Exon")
+				if(classProbaCryptWT=="Yes") {
+					interpretFinal = NULL
+				}
+			}else{
+				interpretFinal = c(interpretFinal,"Alter by create New splice site")
+			}
+		}
+		if (length(grep("Exon",RegType ))>0 & abs(distSS)<120 & deltaESR<(-0.415)){
+			interpretFinal = c(interpretFinal,"Alter ESR")
+		}
+		if(is.null(interpretFinal)){
+			interpretFinal = "Alter by complex event"
+		}else if (length(interpretFinal)>1){
+			interpretFinal = paste(interpretFinal, collapse=" + ")
+		}
+	}
+	return(interpretFinal)
+}
+
+getVPP <- function(score = 0){
+    if(score==(-1)){
+		probaInter = NA
+	}else{
+		VPP = round(VPPtable$propPos[score>=VPPtable$minScore & score<=VPPtable$maxScore][1]*100,2)
+		ICmin = round(VPPtable$confint95a[score>=VPPtable$minScore & score<=VPPtable$maxScore][1]*100,2)
+		ICmax = round(VPPtable$confint95b[score>=VPPtable$minScore & score<=VPPtable$maxScore][1]*100,2)
+		if(VPP<10){VPP=paste0("0",VPP)}
+		if(ICmin<10){ICmin=paste0("0",ICmin)}
+		if(ICmax<10){ICmax=paste0("0",ICmax)}
+		probaInter = paste0(VPP," % [",ICmin," % - ",ICmax," %]")
+		return(probaInter)
+	}
+}
+
+getVPN <- function(distSS,RegType){
+    if(RegType=="."){
+		probaInter = NA
+	}else{
+		if(length(grep("Intron",RegType))>0 & distSS>0){
+			tmpVPNtable = VPNtable[VPNtable$region=="intron5p",]
+		}else if(length(grep("Intron",RegType))>0 & distSS<0){
+			tmpVPNtable = VPNtable[VPNtable$region=="intron3p",]
+		}else if(length(grep("Exon",RegType))>0 & distSS>0){
+			tmpVPNtable = VPNtable[VPNtable$region=="exon3p",]
+		}else if(length(grep("Exon",RegType))>0 & distSS<0){
+			tmpVPNtable = VPNtable[VPNtable$region=="exon5p",]
+		}
+		VPN = round(tmpVPNtable$VPN[distSS>tmpVPNtable$rangeInf & distSS<=tmpVPNtable$rangeSupp][1]*100,2)
+		ICmin = round(tmpVPNtable$confint95a[distSS>tmpVPNtable$rangeInf & distSS<=tmpVPNtable$rangeSupp][1]*100,2)
+		ICmax = round(tmpVPNtable$confint95b[distSS>tmpVPNtable$rangeInf & distSS<=tmpVPNtable$rangeSupp][1]*100,2)
+		if(VPN<10){VPN=paste0("0",VPN)}
+		if(ICmin<10){ICmin=paste0("0",ICmin)}
+		if(ICmax<10){ICmax=paste0("0",ICmax)}
+		probaInter = paste0(VPN," % [",ICmin," % - ",ICmax," %]")
+	}
+	return(probaInter)
+}
+
+getPredConfident <- function(RegType, distSS, SPiPscore){
+    #proba from SNP + UV analysis (N = 99,616)
+	probaInter = -1
+    if(SPiPscore>thToSPiPintron & length(grep("Intron",RegType))>0){
+		probaInter = getVPP(SPiPscore)
+    }else if(SPiPscore>thToSPiPexon & length(grep("Exon",RegType))>0){
+		probaInter = getVPP(SPiPscore)
+    }else{
+		tryCatch({
+			probaInter = getVPN(distSS[1],RegType)
+		},
+		error=function(cond) {
+			probaInter = NA
+		})
+    }
+	return (probaInter)
+}
+
+SPiP <- function(data){
+
+    data$deltaMES = as.numeric(as.character(data$deltaMES))
+    data$BP = as.numeric(as.character(data$BP))
+    data$probaSSPhysio = as.numeric(as.character(data$probaSSPhysio))
+    data$probaCryptMut = as.numeric(as.character(data$probaCryptMut))
+    data$DistSS = as.numeric(as.character(data$DistSS))
+    data$exonSize = as.numeric(as.character(data$exonSize))
+    data$probaCryptWT = as.numeric(as.character(data$probaCryptWT))
+    data$deltaESRscore = as.numeric(as.character(data$deltaESRscore))
+    data$SPiCEproba = as.numeric(as.character(data$SPiCEproba))
+
+    data$RegTypeNum = unlist(lapply(list(data$RegType),function(x) RegTypeToNumber[x,1]))
+	data$probaSSPhysioMut[is.na(data$probaSSPhysioMut)] = 0
+	data$probaSSPhysio[is.na(data$probaSSPhysio)] = 0
+	data$exonSize[is.na(data$exonSize)] = 0
+	prediction = predict(fit.rf,newdata= data,type="prob" )
+	data$SPiPscore = prediction[,2]
+
+	# remove NAs
+    data$SPiPscore[is.na(data$SPiPscore)] <- (-1)
+	data$SPiCEinter_2thr[is.na(data$SPiCEinter_2thr)] <- "."
+	data$RegType[is.na(data$RegType)] <- "."
+	data$deltaMES[is.na(data$deltaMES)] <- (-1)
+	data$mutInPBarea[is.na(data$mutInPBarea)] <- "."
+	data$classProbaCryptMut[is.na(data$classProbaCryptMut)] <- "."
+	data$classProbaCryptWT[is.na(data$classProbaCryptWT)] <- "."
+	data$DistSS[is.na(data$DistSS)] <- (-1)
+	data$deltaESRscore[is.na(data$deltaESRscore)] <- (-1)
+
+	# get interpretation
+    data$Interpretation[data$SPiPscore<=thToSPiPintron & as.numeric(regexpr("Intron",data$RegType))>0] = "NTR"
+	data$Interpretation[data$SPiPscore<=thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0] = "NTR"
+
+	data$Interpretation[data$SPiPscore>thToSPiPintron & as.numeric(regexpr("Intron",data$RegType))>0] = unlist(mapply(getGlobaInterpretation,
+							data$SPiCEinter_2thr[data$SPiPscore>thToSPiPintron & as.numeric(regexpr("Intron",data$RegType))>0],
+							data$RegType[data$SPiPscore>thToSPiPintron & as.numeric(regexpr("Intron",data$RegType))>0],
+							data$deltaMES[data$SPiPscore>thToSPiPintron & as.numeric(regexpr("Intron",data$RegType))>0],
+							data$mutInPBarea[data$SPiPscore>thToSPiPintron & as.numeric(regexpr("Intron",data$RegType))>0],
+							data$classProbaCryptMut[data$SPiPscore>thToSPiPintron & as.numeric(regexpr("Intron",data$RegType))>0],
+							data$classProbaCryptWT[data$SPiPscore>thToSPiPintron & as.numeric(regexpr("Intron",data$RegType))>0],
+							data$DistSS[data$SPiPscore>thToSPiPintron & as.numeric(regexpr("Intron",data$RegType))>0],
+							data$deltaESRscore[data$SPiPscore>thToSPiPintron & as.numeric(regexpr("Intron",data$RegType))>0]))
+
+	data$Interpretation[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0] = unlist(mapply(getGlobaInterpretation,
+							data$SPiCEinter_2thr[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
+							data$RegType[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
+							data$deltaMES[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
+							data$mutInPBarea[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
+							data$classProbaCryptMut[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
+							data$classProbaCryptWT[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
+							data$DistSS[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
+							data$deltaESRscore[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0]))
+	data$InterConfident = unlist(mapply(getPredConfident, data$RegType, data$DistSS, data$SPiPscore))
+    oldNames = names(data)[-which(names(data)%in%c("varID", "Interpretation", "InterConfident", "SPiPscore", "chr", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
+    "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "BP", "mutInPBarea", "deltaESRscore",
+    "posCryptMut", "sstypeCryptMut", "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT",
+    "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut","RegTypeNum"))]
+
+    data = data[,c(oldNames,"varID", "Interpretation", "InterConfident", "SPiPscore", "chr", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
+    "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "BP", "mutInPBarea", "deltaESRscore",
+    "posCryptMut", "sstypeCryptMut", "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT",
+    "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut")]
+
+    return(data)
 }
 
 splitRawToTable <- function(raw, sep = "\t", head = TRUE){
@@ -1937,32 +2041,28 @@ splitRawToTable <- function(raw, sep = "\t", head = TRUE){
     return(data)
 }
 
-convertLine2VCF <- function(varID,SPiPout=NULL,error=FALSE){
-    ID = as.character(varID)
+convertLine2VCF <- function(line){
+    ID = as.character(line$varID)
     QUAL = "."
     FILTER = "."
-    if(!error){
-        names(SPiPout) = c("Interpretation", "InterConfident", "chr", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "transcript",
-            "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated",
-            "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut",
-            "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
-            "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut")
-        seq = SPiPout["seqPhysio"]
-        strand = SPiPout["strand"]
-        varType = SPiPout["varType"]
+    if(line$RegType!="."){
+        seq = line$seqPhysio
+        strand = line$strand
+        varType = line$varType
+        ntChange = line$ntChange
         if(strand=="-"){seq = getRevSeq(seq)}
 
-        CHROM = SPiPout["chr"]
+        CHROM = line$chr
         if(varType=="substitution"){
-            POS = SPiPout["gNomen"]
+            POS = line$gNomen
             REF = if(strand=="+"){unlist(strsplit(ntChange,">",fixed=T))[1]}else if(strand=="-"){getRevSeq(unlist(strsplit(ntChange,">",fixed=T))[1])}
             ALT = if(strand=="+"){unlist(strsplit(ntChange,">",fixed=T))[2]}else if(strand=="-"){getRevSeq(unlist(strsplit(ntChange,">",fixed=T))[2])}
         }else if(varType=="ins"){
-            POS = as.numeric(SPiPout["gNomen"])-1
+            POS = as.numeric(line$gNomen)-1
             REF = substr(seq,151,151)
             ALT = paste0(REF,if(strand=="+"){gsub("ins","",ntChange)}else if(strand=="-"){getRevSeq(gsub("ins","",ntChange))})
         }else if(varType=="dup"){
-            varPOS = as.numeric(unlist(strsplit(SPiPout["gNomen"],"_",fixed=T)))
+            varPOS = as.numeric(unlist(strsplit(line$gNomen,"_",fixed=T)))
             if(length(varPOS)==1){varPOS=rep(varPOS,2)}
             POS = min(varPOS)-1
             mutSize = abs(varPOS[1]-varPOS[2])
@@ -1970,7 +2070,7 @@ convertLine2VCF <- function(varID,SPiPout=NULL,error=FALSE){
             REF = paste0(substr(seq,150,150),ntDup)
             ALT = paste0(substr(seq,150,150),paste(rep(ntDup,2),collapse=""))
         }else if(varType=="del"){
-            varPOS = as.numeric(unlist(strsplit(SPiPout["gNomen"],"_",fixed=T)))
+            varPOS = as.numeric(unlist(strsplit(line$gNomen,"_",fixed=T)))
             if(length(varPOS)==1){varPOS=rep(varPOS,2)}
             POS = min(varPOS)-1
             mutSize = abs(varPOS[1]-varPOS[2])
@@ -1978,7 +2078,7 @@ convertLine2VCF <- function(varID,SPiPout=NULL,error=FALSE){
             REF = paste0(substr(seq,150,150),ntDel)
             ALT = substr(seq,150,150)
         }else if(varType=="delins"){
-            varPOS = as.numeric(unlist(strsplit(SPiPout["gNomen"],"_",fixed=T)))
+            varPOS = as.numeric(unlist(strsplit(line$gNomen,"_",fixed=T)))
             if(length(varPOS)==1){varPOS=rep(varPOS,2)}
             POS = min(varPOS)-1
             mutSize = abs(varPOS[1]-varPOS[2])
@@ -1988,16 +2088,17 @@ convertLine2VCF <- function(varID,SPiPout=NULL,error=FALSE){
             ALT = paste0(substr(seq,150,150),ntIns)
         }
 
-        INFO = paste(c("Interpretation", "InterConfident", "strand", "varType", "ntChange", "ExonInfo", "transcript", "gene", "NearestSS",
-                    "DistSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
-                    "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT",
-                    "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),
-                    paste0("\"",SPiPout[c("Interpretation", "InterConfident", "strand", "varType", "ntChange", "ExonInfo", "transcript", "gene", "NearestSS",
-                                "DistSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut",
-                                "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT",
-                                "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut")],
-                            "\""),
-                    sep="=",collapse=";")
+        INFO = paste(c("Interpretation", "InterConfident", "SPiPscore", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
+            "gene", "NearestSS", "DistSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "BP", "mutInPBarea",
+            "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt",
+            "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio",
+            "probaSSPhysioMut", "classProbaSSPhysioMut"),
+            paste0("\"",line[c("Interpretation", "InterConfident", "SPiPscore", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
+                "gene", "NearestSS", "DistSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "BP", "mutInPBarea",
+                "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt",
+                "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio",
+                "probaSSPhysioMut", "classProbaSSPhysioMut")],"\""),
+            sep="=",collapse=";")
     }else{
         CHROM <- POS <- REF <- ALT <- INFO  <- "."
     }
@@ -2006,36 +2107,6 @@ convertLine2VCF <- function(varID,SPiPout=NULL,error=FALSE){
     return(VCFline)
 }
 
-SPiP <- function(varID,i){
-    if(printProcess){setTxtProgressBar(pb2, i)}
-    if(as.numeric(regexpr('no transcript',varID))>0|
-        as.numeric(regexpr('mutUnknown',varID))>0)
-    {
-        if(printVCF){
-            return(paste(convertLine2VCF(varID,error=T),collapse="\t"))
-        }else{
-            return(paste(rep("NA",35),collapse="\t"))
-        }
-    }else{
-        tryCatch({
-            getVariantInfo(as.character(varID))
-            tmp <- getOutput()
-            if(printVCF){
-                return(paste(convertLine2VCF(varID,tmp,error=F),collapse="\t"))
-            }else{
-                return(paste(tmp,collapse="\t"))
-            }
-        },
-        error=function(cond) {
-            message(paste("Variant caused a error:", varID))
-            if(printVCF){
-                return(paste(convertLine2VCF(varID,error=T),collapse="\t"))
-            }else{
-                return(paste(rep("NA",35),collapse="\t"))
-            }
-        })
-    }
-}
 #launch analysis
 
 T1 <- as.numeric(format(Sys.time(), "%s"))
@@ -2131,25 +2202,27 @@ if(!is.null(data)){
     message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
     total <- nrow(data)
     if(printProcess){pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)}
-    rawResult<-foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
-        SPiP(data[i,"varID"],i)
+    rawAnnotation <- foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
+        getOutputToSPiPmodel(data[i,"varID"],i)
     }
+    rawAnnotation = as.data.frame(matrix(unlist(rawAnnotation),ncol=35, byrow = TRUE))
+    names(rawAnnotation) <- c("chr", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
+        "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "BP", "mutInPBarea",
+        "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt",
+        "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio",
+        "probaSSPhysioMut", "classProbaSSPhysioMut")
+    data = cbind(data,rawAnnotation)
+    data = SPiP(data)
+
     message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
-
-    colNames <- paste(c(columNames, "Interpretation", "InterConfident", "chr", "strand", "gNomen", "varType", "ntChange",
-        "ExonInfo", "transcript", "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated",
-        "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "mutInPBarea", "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut",
-        "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT",
-        "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio", "probaSSPhysioMut", "classProbaSSPhysioMut"),collapse="\t")
-
     if(!printHead & !printVCF){output<-file(outputFile,"w")}else{output<-file(outputFile,"a")}
     if(printVCF){
-        writeLines(c("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO", unlist(rawResult)), con = output,sep="\n")
+        rawOutputVCF <- foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
+            paste(convertLine2VCF(data[i,]),collapse="\t")
+        }
+        writeLines(c("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO", unlist(rawOutputVCF)), con = output,sep="\n")
     }else{
-        writeLines(c(if(fileFormat=="vcf"){mHeader},
-            colNames,
-            paste(rawInput,rawResult,sep="\t")),
-            con = output,sep="\n")
+        writeLines(c(if(fileFormat=="vcf"){mHeader},c(paste(names(data),collapse="\t"),apply(data,1,paste,collapse="\t"))), con = output,sep="\n")
     }
     flush(output)
     close(output)
@@ -2192,15 +2265,26 @@ while(T){
         message(paste("\n",gsub("CET",":",Sys.time(),fixed=T),"Score Calculation..."))
         total <- nrow(data)
         if(printProcess){pb2 <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)}
-        rawResult<-foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
-            SPiP(data[i,"varID"],i)
+        rawAnnotation <- foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
+            getOutputToSPiPmodel(data[i,"varID"],i)
         }
+        rawAnnotation = as.data.frame(matrix(unlist(rawAnnotation),ncol=35, byrow = TRUE))
+        names(rawAnnotation) <- c("chr", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
+            "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "BP", "mutInPBarea",
+            "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt",
+            "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio",
+            "probaSSPhysioMut", "classProbaSSPhysioMut")
+        data = cbind(data,rawAnnotation)
+        data = SPiP(data)
 
         message(paste("\n",sub("CET",":",Sys.time(),fixed=T),"Write results..."))
         if(printVCF){
-            writeLines(unlist(rawResult), con = output,sep="\n")
+            rawOutputVCF <- foreach (i=1:nrow(data),.errorhandling='pass') %dopar% {
+                paste(convertLine2VCF(data[i,]),collapse="\t")
+            }
+            writeLines(unlist(rawOutputVCF), con = output,sep="\n")
         }else{
-            writeLines(c(if(printmHeader){mHeader},paste(rawInput,rawResult,sep="\t")), con = output, sep = "\n")
+            writeLines(c(if(printmHeader){mHeader},apply(data,1,paste,collapse="\t")), con = output, sep = "\n")
         }
         flush(output)
     }
