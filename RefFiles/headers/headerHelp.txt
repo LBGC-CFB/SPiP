@@ -1,0 +1,3 @@
+# dynamic line modified in script : paste0("##SPiP output v",version)
+# dynamic line modified in script : paste0("##SPiPCommand=",CMD)
+## SPiP=altUsed|varID|Interpretation|InterConfident|SPiPscore|strand|gNomen|varType|ntChange|ExonInfo|exonSize|transcript|gene|NearestSS|DistSS|RegType|SPiCEproba|SPiCEinter_2thr|deltaMES|BP|mutInPBarea|deltaESRscore|posCryptMut|sstypeCryptMut|probaCryptMut|classProbaCryptMut|nearestSStoCrypt|nearestPosSStoCrypt|nearestDistSStoCrypt|posCryptWT|probaCryptWT|classProbaCryptWT|posSSPhysio|probaSSPhysio|classProbaSSPhysio|probaSSPhysioMut|classProbaSSPhysioMut

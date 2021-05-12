@@ -18,22 +18,50 @@ source(paste0(path2scripts,"SPiP_scores.r"))
     }
 )
 
+setTranscript <- function (transcriptsDF) {
+	transcriptsDF <- unique(transcriptsDF)
+    transcript <- as.character(transcriptsDF[,"trID"])
+    transcript <- transcript[transcript!=""]
+	if (length(transcript)>0) {
+		local_dataRefSeq <<- dataRefSeq[which(dataRefSeq$V4 %in% transcript),]
+	}
+}
+
+getTranscript2varID <- function(varID){
+    tmp = unlist(strsplit(varID,":",fixed = T))
+    tr = tmp[1]
+    if(length(grep(".",tr ))>0){
+        tr = unlist(strsplit(tr,".",fixed = T))[1]
+    }
+    return(tr)
+}
+
+contigToChr <- function(text){
+    text1=unlist(strsplit(text, ".", fixed = TRUE))[1]
+    chr=text
+    if(substr(text1,1,2)=="NC"){
+        chr=paste('chr',as.numeric(substr(text1,4,nchar(text1))),sep="")
+        if(chr=="chr23"){chr="chrX"}else if(chr=="chr24"){chr="chrY"}
+    }
+    return(chr)
+}
+
 getPosSSphysio <- function(transcrit){
 
-	if(dim(dataRefSeq[dataRefSeq$V4==transcrit,])[1]==0){
+	if(dim(local_dataRefSeq[local_dataRefSeq$V4==transcrit,])[1]==0){
 		paste("I don't find the transcript:",transcrit,"in the Refseq database")
 	}else{
 
-		chr <<- as.character(dataRefSeq[dataRefSeq$V4==transcrit,1])
-		sens <<- as.character(dataRefSeq[dataRefSeq$V4==transcrit,6])
+		chr <<- as.character(local_dataRefSeq[local_dataRefSeq$V4==transcrit,1])
+		sens <<- as.character(local_dataRefSeq[local_dataRefSeq$V4==transcrit,6])
 
 	if(sens=="+"){
-		posStart=dataRefSeq[dataRefSeq$V4==transcrit,2]
-		tailleCum=dataRefSeq[dataRefSeq$V4==transcrit,12]
+		posStart=local_dataRefSeq[local_dataRefSeq$V4==transcrit,2]
+		tailleCum=local_dataRefSeq[local_dataRefSeq$V4==transcrit,12]
 		tailleCum=strsplit(as.character(tailleCum),split=",")
 		tailleCum=as.numeric(unlist(tailleCum))
 		posAcc <<- posStart+tailleCum
-		taille=dataRefSeq[dataRefSeq$V4==transcrit,11]
+		taille=local_dataRefSeq[local_dataRefSeq$V4==transcrit,11]
 		taille=strsplit(as.character(taille),split=",")
 		taille=as.numeric(unlist(taille))
 		posDon <<- posAcc+taille
@@ -42,12 +70,12 @@ getPosSSphysio <- function(transcrit){
 			posAcc <<- posAcc[-1]
 		}
 	}else if(sens=="-"){
-		posEnd=dataRefSeq[dataRefSeq$V4==transcrit,2]
-		tailleCum=dataRefSeq[dataRefSeq$V4==transcrit,12]
+		posEnd=local_dataRefSeq[local_dataRefSeq$V4==transcrit,2]
+		tailleCum=local_dataRefSeq[local_dataRefSeq$V4==transcrit,12]
 		tailleCum=strsplit(as.character(tailleCum),split=",")
 		tailleCum=as.numeric(unlist(tailleCum))
 		posDon <<- posEnd+tailleCum
-		taille=dataRefSeq[dataRefSeq$V4==transcrit,11]
+		taille=local_dataRefSeq[local_dataRefSeq$V4==transcrit,11]
 		taille=strsplit(as.character(taille),split=",")
 		taille=as.numeric(unlist(taille))
 		posAcc <<- posDon+taille
@@ -280,17 +308,17 @@ getNearestPosCrypt <- function(sens, cryptPos ,posDon, posAcc){
 
 getExonInfo <- function(transcrit,posVar){
 
-	sens = as.character(dataRefSeq[dataRefSeq$V4==transcrit,6])
-	posStart=dataRefSeq[dataRefSeq$V4==transcrit,2]
-	tailleExon = as.numeric(unlist(strsplit(as.character(dataRefSeq[dataRefSeq$V4==transcrit,11]),",")))
-	tailleCum=dataRefSeq[dataRefSeq$V4==transcrit,12]
+	sens = as.character(local_dataRefSeq[local_dataRefSeq$V4==transcrit,6])
+	posStart=local_dataRefSeq[local_dataRefSeq$V4==transcrit,2]
+	tailleExon = as.numeric(unlist(strsplit(as.character(local_dataRefSeq[local_dataRefSeq$V4==transcrit,11]),",")))
+	tailleCum=local_dataRefSeq[local_dataRefSeq$V4==transcrit,12]
 	tailleCum=strsplit(as.character(tailleCum),split=",")
 	tailleCum=as.numeric(unlist(tailleCum))
 
 	if(sens=="+"){
 
-		gCDSstart = dataRefSeq[dataRefSeq$V4==transcrit,7]
-		gCDSend = dataRefSeq[dataRefSeq$V4==transcrit,8]
+		gCDSstart = local_dataRefSeq[local_dataRefSeq$V4==transcrit,7]
+		gCDSend = local_dataRefSeq[local_dataRefSeq$V4==transcrit,8]
 		posAcc = posStart+tailleCum + 1
 		posDon = posAcc+tailleExon - 1
 
@@ -306,8 +334,8 @@ getExonInfo <- function(transcrit,posVar){
 		}
 	}else if(sens=="-"){
 
-		gCDSstart = dataRefSeq[dataRefSeq$V4==transcrit,8]
-		gCDSend = dataRefSeq[dataRefSeq$V4==transcrit,7]
+		gCDSstart = local_dataRefSeq[local_dataRefSeq$V4==transcrit,8]
+		gCDSend = local_dataRefSeq[local_dataRefSeq$V4==transcrit,7]
 		posDon = posStart+tailleCum + 1
 		posAcc = posDon+tailleExon - 1
 
@@ -327,17 +355,17 @@ getExonInfo <- function(transcrit,posVar){
 
 convertcNomenIngNomen <- function(transcrit,posVar){
 
-	sens = as.character(dataRefSeq[dataRefSeq$V4==transcrit,6])
-	posStart=dataRefSeq[dataRefSeq$V4==transcrit,2]
-	tailleExon = as.numeric(unlist(strsplit(as.character(dataRefSeq[dataRefSeq$V4==transcrit,11]),",")))
-	tailleCum=dataRefSeq[dataRefSeq$V4==transcrit,12]
+	sens = as.character(local_dataRefSeq[local_dataRefSeq$V4==transcrit,6])
+	posStart=local_dataRefSeq[local_dataRefSeq$V4==transcrit,2]
+	tailleExon = as.numeric(unlist(strsplit(as.character(local_dataRefSeq[local_dataRefSeq$V4==transcrit,11]),",")))
+	tailleCum=local_dataRefSeq[local_dataRefSeq$V4==transcrit,12]
 	tailleCum=strsplit(as.character(tailleCum),split=",")
 	tailleCum=as.numeric(unlist(tailleCum))
 
 	if(sens=="+"){
 
-		gCDSstart = dataRefSeq[dataRefSeq$V4==transcrit,7]
-		gCDSend = dataRefSeq[dataRefSeq$V4==transcrit,8]
+		gCDSstart = local_dataRefSeq[local_dataRefSeq$V4==transcrit,7]
+		gCDSend = local_dataRefSeq[local_dataRefSeq$V4==transcrit,8]
 
 		posAcc = posStart+tailleCum + 1
 		posDon = posAcc+tailleExon - 1
@@ -439,8 +467,8 @@ convertcNomenIngNomen <- function(transcrit,posVar){
 
 	}else if(sens=="-"){
 
-		gCDSstart = dataRefSeq[dataRefSeq$V4==transcrit,8]
-		gCDSend = dataRefSeq[dataRefSeq$V4==transcrit,7]
+		gCDSstart = local_dataRefSeq[local_dataRefSeq$V4==transcrit,8]
+		gCDSend = local_dataRefSeq[local_dataRefSeq$V4==transcrit,7]
 		posDon = posStart+tailleCum + 1
 		posAcc = posDon+tailleExon - 1
 
@@ -565,7 +593,7 @@ getSplitTableSeq <- function(varName, chr, varPos, sens, seqPhysio, seqMutated, 
 	seqExonDonMut = substr(rep(seqMutated,length(relPosDonMutFilt)),relPosDonMutFilt-100,relPosDonMutFilt-1)
 
 	if(sens == "+"){
-		PosAccPhy = varPos + (relPosAccPhyFilt-150)
+        PosAccPhy = varPos + (relPosAccPhyFilt-150)
 		PosDonPhy = varPos + (relPosDonPhyFilt-152)
 		PosAccMut = varPos + (relPosAccMutFilt-150)
 		PosDonMut = varPos + (relPosDonMutFilt-152)
@@ -594,11 +622,12 @@ getSplitTableSeq <- function(varName, chr, varPos, sens, seqPhysio, seqMutated, 
 				PosAccMut[PosAccMut<varPos] = PosAccMut[PosAccMut<varPos] + nbIns
 				PosDonMut[PosDonMut<varPos] = PosDonMut[PosDonMut<varPos] + nbIns
 			}else if(varType=="delins"){
-				PosAccMut[PosAccMut<varPos] = PosAccMut[PosAccMut<varPos] + (nbIns - nbDel)
+                PosAccMut[PosAccMut<varPos] = PosAccMut[PosAccMut<varPos] + (nbIns - nbDel)
 				PosDonMut[PosDonMut<varPos] = PosDonMut[PosDonMut<varPos] + (nbIns - nbDel)
 			}
 		}
 	}
+
 	tmpTableSeq = data.frame(var = rep(varName,length(c(PosAccPhy,PosDonPhy,PosAccMut,PosDonMut))),
 					chr = rep(chr,length(c(PosAccPhy,PosDonPhy,PosAccMut,PosDonMut))),
 					relPos = c(relPosAccPhyFilt,relPosDonPhyFilt,relPosAccMutFilt,relPosDonMutFilt),
@@ -751,7 +780,6 @@ getSPiCE <- function(SstypePhy, seqConsWT, seqConsMut){
 	}
 }
 
-
 getDeltaMES <- function(SstypePhy, seqConsWT, seqConsMut){
 	MESwt = getMES(paste(toupper(substr(SstypePhy,1,1)),substr(SstypePhy,2,3),sep=""),seqConsWT)
 	MESmut = getMES(paste(toupper(substr(SstypePhy,1,1)),substr(SstypePhy,2,3),sep=""),seqConsMut)
@@ -838,7 +866,7 @@ getVariantInfo <- function(varID){
 		if(length(grep(".",transcript ))>0){
 			transcript = unlist(strsplit(transcript,".",fixed = T))[1]
 		}
-		if(length(varDecomp)==2){
+        if(length(varDecomp)==2 & varDecomp[1] != 'no transcript'){
 			getMutInfo(varDecomp[2])
 		}else{
 			varPos = as.character(varDecomp[2])
@@ -857,6 +885,11 @@ getVariantInfo <- function(varID){
 				}else{
 					varPos[1]=substr(varPos[1],3,nchar(varPos[1]))
 				}
+                varPos <- as.numeric(varPos)
+				nbDel <<- abs(varPos[1]-varPos[2])+1
+                ntIns <<- gsub("delins", "", ntChange)
+                nbIns <<- nchar(ntIns)
+
 			}else{
 				if(length(grep("c.",varPos[1]))>0){
 					varPos[1] = substr(varPos[1],3,nchar(varPos[1]))
@@ -866,6 +899,9 @@ getVariantInfo <- function(varID){
 					varPos[1] = substr(varPos[1],3,nchar(varPos[1]))
 					varPos = c(varPos,varPos)
 				}
+				nbDel <<- 1
+                ntIns <<- gsub("delins", "", ntChange)
+                nbIns <<- nchar(ntIns)
 			}
 		}else if (length(grep("del",ntChange ))>0){
 			varType = "del"
@@ -880,6 +916,8 @@ getVariantInfo <- function(varID){
 				}else{
 					varPos[1] = substr(varPos[1],3,nchar(varPos[1]))
 				}
+                varPos = as.numeric(varPos)
+                nbDel <<- abs(varPos[1]-varPos[2])+1
 			}else{
 				if(length(grep("c.",varPos[1]))>0){
 					varPos[1] = substr(varPos[1],3,nchar(varPos[1]))
@@ -889,6 +927,7 @@ getVariantInfo <- function(varID){
 					varPos[1] = substr(varPos[1],3,nchar(varPos[1]))
 					varPos = c(varPos,varPos)
 				}
+				nbDel <<- 1
 			}
 		}else if(length(grep("ins",ntChange ))>0){
 			varType = "ins"
@@ -899,6 +938,8 @@ getVariantInfo <- function(varID){
 			}else{
 				varPos=substr(varPos,3,nchar(varPos))
 			}
+			ntIns <<- gsub("ins", "", ntChange)
+			nbIns <<- nchar(ntIns)
 		}else if(length(grep("dup",ntChange ))>0){
 			varType = "dup"
 			if(length(grep("_",varPos ))>0){
@@ -922,6 +963,9 @@ getVariantInfo <- function(varID){
 					varPos = c(varPos,varPos)
 				}
 			}
+            # que faire ?
+            varPos = as.numeric(varPos)
+			nbIns <<- abs(varPos[1]-varPos[2])+1
 		}else{
 			varType = "substitution"
 			if(length(grep("c.",varPos))>0){
@@ -931,6 +975,7 @@ getVariantInfo <- function(varID){
 			}else{
 				varPos=substr(varPos,3,nchar(varPos))
 			}
+			ntMut <<- as.character(unlist(strsplit(ntChange,">")))[2]
 		}
 	}
 	varID <<- varID
@@ -940,14 +985,102 @@ getVariantInfo <- function(varID){
 	ntChange <<- ntChange
 }
 
-getAnnotation <- function(){
+getSeqCons <- function(SstypePhy, distSS, seq, varType, varPos, ntChange){
+	if (varType=="del"){
+		nbDel <- abs(varPos[1]-varPos[2])+1
+		if(SstypePhy=="acceptor"){
+			if(distSS<0){
+				if(nbDel>abs(distSS)){
+					seqCons = substr(seq, 131, 153)
+				}else{
+					seqCons = substr(seq, 150-(19+distSS+nbDel), 150+(3-(distSS+nbDel)))
+				}
+			}else{
+				seqCons = substr(seq, 151-(19+distSS), 151+(3-distSS))
+			}
+		}else{
+			if(distSS<0){
+				if(nbDel>abs(distSS)){
+					seqCons = substr(seq, 148, 156)
+				}else{
+					seqCons = substr(seq, 150-(2+distSS+nbDel), 150+(6-(distSS+nbDel)))
+				}
+			}else{
+				seqCons = substr(seq, 151-(2+distSS), 151+(6-distSS))
+			}
+		}
+	}else if (varType=="dup" | varType=="ins"){
+		if (varType=="ins"){
+			nbIns <- nchar(gsub("ins", "", ntChange))
+		}else{
+			nbIns <- abs(varPos[1]-varPos[2])+1
+		}
+		if(SstypePhy=="acceptor"){
+			if(distSS<0){
+				seqCons = substr(seq, 150-(19+distSS) + nbIns, 150+(3-distSS) + nbIns)
+			}else{
+				seqCons = substr(seq, 151-(19+distSS), 151+(3-distSS))
+			}
+		}else{
+			if(distSS<0){
+				seqCons = substr(seq, 150-(2+distSS) + nbIns, 150+(6-distSS) + nbIns)
+			}else{
+				seqCons = substr(seq, 151-(2+distSS), 151+(6-distSS))
+			}
+		}
+	}else if (varType=="delins"){
+		nbDel <- abs(varPos[1]-varPos[2])+1
+		nbIns <- nchar(gsub("delins", "", ntChange))
+		if(SstypePhy=="acceptor"){
+			if(distSS<0){
+				if(nbDel>abs(distSS)){
+					seqCons = substr(seq, 131, 153)
+				}else{
+					seqCons = substr(seq, 150-(19+distSS) + (nbIns-nbDel), 150+(3-distSS) + (nbIns-nbDel))
+				}
+			}else{
+				seqCons = substr(seq, 151-(19+distSS), 151+(3-distSS))
+			}
+		}else{
+			if(distSS<0){
+				if(nbDel>abs(distSS)){
+					seqCons = substr(seq, 148, 156)
+				}else{
+					seqCons = substr(seq, 150-(2+distSS) + (nbIns-nbDel), 150+(6-distSS) + (nbIns-nbDel))
+				}
+			}else{
+				seqCons = substr(seq, 151-(2+distSS), 151+(6-distSS))
+			}
+		}
+	}else{
+		if(SstypePhy=="acceptor"){
+			if(distSS<0){
+				seqCons = substr(seq, 150-(19+distSS), 150+(3-distSS))
+			}else{
+				seqCons = substr(seq, 151-(19+distSS), 151+(3-distSS))
+			}
+		}else{
+			if(distSS<0){
+				seqCons = substr(seq, 150-(2+distSS), 150+(6-distSS))
+			}else{
+				seqCons = substr(seq, 151-(2+distSS), 151+(6-distSS))
+			}
+		}
+	}
+	return(seqCons)
+}
+
+getAnnotation <- function(seqPhysio, seqMutated){
 	getPosSSphysio(transcript)
 	getNearestPos(sens, varPos ,posDon, posAcc)
 
 	start=varPos[1]-150
 	end=varPos[1]+150
-	seqPhysio <<- getSequencePhysio (genome,sens,chr,start,end)
-	getSequenceMutated (varPos, sens, seqPhysio, ntChange, varType, genome, chr)
+    if(fileFormat=="txt"){
+        seqPhysio <- getSequencePhysio(genome,sens,chr,start,end)
+        seqPhysio <<- seqPhysio
+        seqMutated = getSequenceMutated(varPos, sens, seqPhysio, ntChange, varType, genome, chr)
+    }
 	seqPhysio <<- toupper(as.character(seqPhysio))
 	seqMutated <<- toupper(as.character(seqMutated))
 	tmpTableSeq <<- getSplitTableSeq(varID, chr, varPos[1], sens, seqPhysio, seqMutated, posDon, posAcc, nearestPosAll,varType)
@@ -995,7 +1128,7 @@ getAnnotation <- function(){
 	}else{
 		print("erreur varpos")
 	}
-	gene <- as.character(dataRefSeq$V13[dataRefSeq$V4==transcript])
+	gene <- as.character(local_dataRefSeq$V13[local_dataRefSeq$V4==transcript])
 	mutInPBarea <- mutInPBareaBPP
     if(is.na(mutInPBareaBPP)){BP <- 0}else if(mutInPBareaBPP=="No"){BP <- 0}else{BP <- 1}
 	deltaESRscore <- ESRscore
@@ -1071,21 +1204,23 @@ getAnnotation <- function(){
     return(result)
 }
 
-getOutputToSPiPmodel <- function(varID,i){
+getOutputToSPiPmodel <- function(varID,i,seqPhysio = "", seqMutated = ""){
     if(printProcess){setTxtProgressBar(pb2, i)}
     if(as.numeric(regexpr('no transcript',varID))>0|
         as.numeric(regexpr('mutUnknown',varID))>0)
     {
-            return(rep("NA",35))
+        tmp <- rep("NA",35)
+        return(tmp)
     }else{
         tryCatch({
             getVariantInfo(as.character(varID))
-            tmp <- getAnnotation()
-                return(tmp)
+            tmp <- getAnnotation(seqPhysio, seqMutated)
+            return(tmp)
         },
         error=function(cond) {
             message(paste("Variant caused a error:", varID))
-            return(rep("NA",35))
+            tmp <- rep("NA",35)
+            return(tmp)
         })
     }
 }
@@ -1273,6 +1408,12 @@ splitRawToTable <- function(raw, sep = "\t", head = TRUE){
     return(data)
 }
 
+
+mergeSPiPresult<-function(x){
+    c = paste0("SPiP=",paste0(INFO[which(VCFinfo_text%in%x)],collapse=";SPiP="))
+    return(c)
+}
+
 convertLine2VCF <- function(line){
     ID = as.character(line$varID)
     QUAL = "."
@@ -1320,17 +1461,11 @@ convertLine2VCF <- function(line){
             ALT = paste0(substr(seq,150,150),ntIns)
         }
 
-        INFO = paste(c("Interpretation", "InterConfident", "SPiPscore", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
-            "gene", "NearestSS", "DistSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "BP", "mutInPBarea",
-            "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt",
-            "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio",
-            "probaSSPhysioMut", "classProbaSSPhysioMut"),
-            paste0("\"",line[c("Interpretation", "InterConfident", "SPiPscore", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
+        INFO = paste(line[c("Interpretation", "InterConfident", "SPiPscore", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
                 "gene", "NearestSS", "DistSS", "RegType", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "BP", "mutInPBarea",
                 "deltaESRscore", "posCryptMut", "sstypeCryptMut", "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt",
                 "nearestDistSStoCrypt", "posCryptWT", "probaCryptWT", "classProbaCryptWT", "posSSPhysio", "probaSSPhysio", "classProbaSSPhysio",
-                "probaSSPhysioMut", "classProbaSSPhysioMut")],"\""),
-            sep="=",collapse=";")
+                "probaSSPhysioMut", "classProbaSSPhysioMut")],collapse="|")
     }else{
         CHROM <- POS <- REF <- ALT <- INFO  <- "."
     }
@@ -1340,15 +1475,20 @@ convertLine2VCF <- function(line){
 }
 
 #import data
-readVCF <- function(dataLine,i){
+readVCF <- function(txtLine,i){
     if(printProcess){setTxtProgressBar(pb, i)}
-    dataLine = unlist(strsplit(dataLine,split='\t')) #c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO")
+    dataLine = unlist(strsplit(txtLine,split='\t')) #c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO",SUITE?)
     chrom <- dataLine[1]
     pos <- as.numeric(dataLine[2])
     ref <- dataLine[4]
     alt <- dataLine[5]
+	lengthDataLine <- length(dataLine)
+
     if(ref=="."|alt=="."){
-        variant = "mutUnknown"
+		resultMatrix <- c("mutUnknown","","","","")
+		for (k in 1:lengthDataLine) {
+			resultMatrix <- c(resultMatrix,dataLine[k])
+		}
     }else{
         if(substr(as.character(chrom[1]),1,3)!="chr"){
             if(substr(as.character(chrom[1]),1,3)=="NC_"){
@@ -1357,35 +1497,82 @@ readVCF <- function(dataLine,i){
                 chrom = paste("chr",chrom,sep="")
             }
         }
-        transcript = as.character(dataRefSeq[dataRefSeq$V1==chrom & dataRefSeq$V2<=pos & dataRefSeq$V3>=pos,'V4'])
-        strandTrans = as.character(dataRefSeq[dataRefSeq$V1==chrom & dataRefSeq$V2<=pos & dataRefSeq$V3>=pos,'V6'])
+
+		bonus <- nchar(ref) # in case ref is deleted, we need some additional bases to compute the deleted seq
+
+        transcriptLines <- dataRefSeq[dataRefSeq$V1==chrom & dataRefSeq$V2<=pos & dataRefSeq$V3>=pos,]
+		transcript <- transcriptLines[,'V4']
+        strandTrans <- transcriptLines[,'V6']
+
+		totalSequence <- getSequencePhysio(genome, '+', chrom, max(1,pos - 150 - bonus), pos+150+bonus)
+		seqStart <- max(1,pos-150-bonus)
+		seqLength <- nchar(totalSequence)
+		if (ref == "-") {
+			posIndex <- c(pos-seqStart+1,pos-seqStart) # special case for comment below : ref == - => last = first-1
+		} else {
+			posIndex <- c(pos-seqStart+1,pos-seqStart+nchar(ref)) # posIndex[1] : first index of ref / posIndex[2] : last index of ref
+		}
+
+		# computed once for all '+' transcripts
+		seqPhysio <- substr(totalSequence, posIndex[1]-150, posIndex[1]+150)
+		seqMutated1 <- substr(totalSequence, posIndex[1]-150, posIndex[1]-1)
+		seqMutated2 <- substr(totalSequence, posIndex[2]+1, posIndex[2]+150)
+
+		# computed once for all '-' transcripts
+		revSeqPhysio <- getRevSeq(substr(totalSequence, posIndex[2]-150, posIndex[2]+150))
+		revSeqMutated1 <- getRevSeq(substr(totalSequence, posIndex[2]+1, posIndex[2]+150))
+		revSeqMutated2 <- getRevSeq(substr(totalSequence, posIndex[1]-150, posIndex[1]-1))
+		revRef <- getRevSeq(ref)
+
         if(length(transcript)==0){
-            variant = paste("no transcript",pos,sep=":")
+            resultMatrix <- c(paste("no transcript",pos,sep=":"),"","","","")
+			for (k in 1:lengthDataLine) {
+				resultMatrix <- c(resultMatrix,dataLine[k])
+			}
         }else{
             altSplit = unlist(strsplit(alt,',',fixed = TRUE))
-            variant = NULL
-            for(i in 1:length(transcript)){
-                if(strandTrans[i]=="+"){
-                    for(j in 1:length(altSplit)){
+			nbAlt <- length(altSplit)
+
+			resultMatrix <- matrix(rep("",length(transcript)*nbAlt*(5+lengthDataLine)), ncol = 5+lengthDataLine)
+			# matrix dedicated to the storage of [varID, seqPhysio, seqMutated, transcript, altUsed, +infosOfInput] for each variant
+
+			for (i in 1:length(transcript)) {
+                if(strandTrans[i] =="+"){
+					for(j in 1:nbAlt){
+						resultMatrix[(i-1)*nbAlt + j,2] <- seqPhysio
+						resultMatrix[(i-1)*nbAlt + j,4] <- as.character(transcript[i])
+						resultMatrix[(i-1)*nbAlt + j,5] <- altSplit[j]
+						for (k in 1:lengthDataLine) {
+							resultMatrix[(i-1)*nbAlt + j,5+k] <- dataLine[k]
+						}
                         if(nchar(ref)==1 & nchar(altSplit[j])==1){
-                            variant = c(variant,paste(transcript[i],':g.',pos,':',ref,'>',altSplit[j],sep=""))
-                        }else{
-                            variant = c(variant,paste(transcript[i],':g.',pos,"_",pos+nchar(ref)-1,':delins',altSplit[j],sep=""))
+                            resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos,':',ref,'>',altSplit[j],sep="")
+							resultMatrix[(i-1)*nbAlt + j,3] <- paste(seqMutated1,altSplit[j],seqMutated2,sep="")
+                        }else{ # all other variants than subsitution are considered as delins
+                            resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos,"_",pos+nchar(ref)-1,':delins',altSplit[j],sep="")
+							resultMatrix[(i-1)*nbAlt + j,3] <- substr(paste(seqMutated1,altSplit[j],seqMutated2,sep=""),1,301)
                         }
                     }
-                }else if(strandTrans[i]=="-"){
-                    refRev = getRevSeq(ref)
-                    for(j in 1:length(altSplit)){
+				} else if (strandTrans[i]=="-"){
+					for(j in 1:nbAlt){
                         altRev = getRevSeq(altSplit[j])
-                        if(nchar(refRev)==1 & nchar(altRev)==1){
-                            variant = c(variant,paste(transcript[i],':g.',pos,':',refRev,'>',altRev,sep=""))
+						resultMatrix[(i-1)*nbAlt + j,2] <- revSeqPhysio
+						resultMatrix[(i-1)*nbAlt + j,4] <- as.character(transcript[i])
+						resultMatrix[(i-1)*nbAlt + j,5] <- altSplit[j] # not reverse-complemented
+						for (k in 1:lengthDataLine) {
+							resultMatrix[(i-1)*nbAlt + j,5+k] <- dataLine[k]
+						}
+                        if(nchar(revRef)==1 & nchar(altRev)==1){
+                            resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos,':',revRef,'>',altRev,sep="")
+							resultMatrix[(i-1)*nbAlt + j,3] <- paste(revSeqMutated1,altRev,revSeqMutated2,sep="")
                         }else{
-                            variant = c(variant,paste(transcript[i],':g.',pos+nchar(refRev)-1,"_",pos,':delins',altRev,sep=""))
+                            resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos+nchar(revRef)-1,"_",pos,':delins',altRev,sep="")
+							resultMatrix[(i-1)*nbAlt + j,3] <- substr(paste(revSeqMutated1,altRev ,revSeqMutated2,sep=""),1,301)
                         }
                     }
-                }
-            }
+				}
+			}
         }
     }
-    result <<- list(variant)
+    result <<- unlist(as.list(t(resultMatrix)))
 }
