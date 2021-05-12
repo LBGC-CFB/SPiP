@@ -3,7 +3,7 @@
 
 ---
 
-SPiP is a decisional tree running a cascade of bioinformatics tools. Briefly, SPiP uses SPiCE tool for the consensus splice sites (donor and acceptor sites), MES for polypyrimidine tract between -13 and -20, BPP for branch point area between -18 and -44, an homemade score to research cryptic/de novo activation and ΔtESRseq for exonic splicing regulatory element until to 120 nt in exon
+SPiP is a randomForest model running a cascade of bioinformatics tools. Briefly, SPiP uses SPiCE tool for the consensus splice sites (donor and acceptor sites), MES for polypyrimidine tract between -13 and -20, BPP for branch point area between -18 and -44, an homemade score to research cryptic/de novo activation and ΔtESRseq for exonic splicing regulatory element until to 120 nt in exon
 
 SPiP is available for Windows OS at https://sourceforge.net/projects/splicing-prediction-pipeline/
 
@@ -21,7 +21,7 @@ SPiP is available for Windows OS at https://sourceforge.net/projects/splicing-pr
 
 ---
 
-* SPiPv1.1: the SPiP scripts
+* SPiPv2.0_main.r: the SPiP script
 * testCrypt.txt: an example of input data in text format
 * testVar.vcf: an example of input data in vcf format
 * *RefFiles*: folder where are the reference files used by SPiP
@@ -40,6 +40,7 @@ SPiP needs also to install 2 libraries, from the R console:
 ```R
 install.packages("foreach")
 install.packages("doParallel")
+install.packages("randomForest")
 ```
 
 ### Load the transcriptome files<a id="3"></a>
@@ -56,13 +57,13 @@ NB: commands to regenerate these files are available in [getGenomeSequenceFromBS
 
 ---
 
-you can get the different argument of SPiP by `Rscript /path/to/SPiPv1.1.r --help`
+you can get the different argument of SPiP by `Rscript /path/to/SPiPv2.0_main.r --help`
 
 An example of SPiP run with test file [testCrypt.txt](http://gitlab.baclesse.fr/LEMRAP/spip/blob/master/testCrypt.txt "tittle"):
 
 ```shell
 cd /path/to/SPiP/
-Rscript ./SPiPv1.1.r -I ./testCrypt.txt -O ./outputTest.txt -s /path/to/samtools -f /path/to/genomehg19.fa
+Rscript ./SPiPv2.0_main.r -I ./testCrypt.txt -O ./outputTest.txt
 ```
 
 In this example SPiP will generate a text file "outputTest.txt" where the predictions will be save. The scheme of this output is:
@@ -149,120 +150,21 @@ In this example SPiP will generate a text file "outputTest.txt" where the predic
 + Get the SPiP output in VCF format (v4.0)
 
 ```shell
-##fileformat=VCFv4.0
-##SPiP output v1.1
-##SPiPCommand=/path/to/SPiPv1.1.r -I inputFile -O outputFile --VCF
-##assembly=GRCh37/hg19
-##contig=<ID=chr1,length=249250621>
-##contig=<ID=chr2,length=243199373>
-##contig=<ID=chr3,length=198022430>
-##contig=<ID=chr4,length=191154276>
-##contig=<ID=chr5,length=180915260>
-##contig=<ID=chr6,length=171115067>
-##contig=<ID=chr7,length=159138663>
-##contig=<ID=chr8,length=146364022>
-##contig=<ID=chr9,length=141213431>
-##contig=<ID=chr10,length=135534747>
-##contig=<ID=chr11,length=135006516>
-##contig=<ID=chr12,length=133851895>
-##contig=<ID=chr13,length=115169878>
-##contig=<ID=chr14,length=107349540>
-##contig=<ID=chr15,length=102531392>
-##contig=<ID=chr16,length=90354753>
-##contig=<ID=chr17,length=81195210>
-##contig=<ID=chr18,length=78077248>
-##contig=<ID=chr19,length=59128983>
-##contig=<ID=chr20,length=63025520>
-##contig=<ID=chr21,length=48129895>
-##contig=<ID=chrX,length=155270560>
-##contig=<ID=chr22,length=51304566>
-##contig=<ID=chrY,length=59373566>
-##INFO=<ID=varID,Number=1,Type=String,Description="The name of variant (transcript:mutation)">
-##INFO=<ID=Interpretation,Number=1,Type=String,Description="Overall prediction of SPiP">
-##INFO=<ID=InterConfident,Number=1,Type=String,Description="Probability of splicing alteration with CI_95%, estimated from mutations 53,048 mutations">
-##INFO=<ID=chr,Number=1,Type=String,Description="Chromosome number">
-##INFO=<ID=strand,Number=1,Type=String,Description="Strand of the transcripts">
-##INFO=<ID=varType,Number=1,Type=String,Description="Type of variant">
-##INFO=<ID=ntChange,Number=1,Type=String,Description="Nucleotides variation">
-##INFO=<ID=ExonInfo,Number=1,Type=String,Description="Number and size of Exon/Intron">
-##INFO=<ID=transcript,Number=1,Type=String,Description="Transcript (RefSeq)">
-##INFO=<ID=gene,Number=1,Type=String,Description="Gene symbol (RefSeq)">
-##INFO=<ID=gNomen,Number=1,Type=String,Description="Genomic coordinates">
-##INFO=<ID=seqPhysio,Number=1,Type=String,Description="(A, C, G, T)-sequence before the mutation">
-##INFO=<ID=seqMutated,Number=1,Type=String,Description="(A, C, G, T)-sequence after the mutation">
-##INFO=<ID=NearestSS,Number=1,Type=String,Description="Nearest splice site to the mutation">
-##INFO=<ID=distSS,Number=1,Type=String,Description="Distance between the splice site and the mutation">
-##INFO=<ID=RegType,Number=1,Type=String,Description="Type of region in the transcript, Exon/Intron">
-##INFO=<ID=SPiCEproba,Number=1,Type=Float,Description="SPiCE score">
-##INFO=<ID=SPiCEinter_2thr,Number=1,Type=String,Description="Classes of SPiCE (low, medium, high)">
-##INFO=<ID=deltaMES,Number=1,Type=Float,Description="Delta score of MES">
-##INFO=<ID=mutInPBarea,Number=1,Type=String,Description="Mutation in branch point">
-##INFO=<ID=deltaESRscore,Number=1,Type=Float,Description="Score of deltaESRscore">
-##INFO=<ID=posCryptMut,Number=1,Type=Integer,Description="Postion of mutated cryptic splice site">
-##INFO=<ID=sstypeCryptMut,Number=1,Type=String,Description="Splice type of mutated cryptic splice site">
-##INFO=<ID=probaCryptMut,Number=1,Type=Float,Description="Score of mutated cryptic splice site">
-##INFO=<ID=classProbaCryptMut,Number=1,Type=String,Description="Use of mutated cryptic splice site (Yes/No)">
-##INFO=<ID=nearestSStoCrypt,Number=1,Type=String,Description="Splice type of the nearest natural splice site to the mutated cryptic site">
-##INFO=<ID=nearestPosSStoCrypt,Number=1,Type=Integer,Description="Position of the nearest natural splice site to the mutated cryptic site">
-##INFO=<ID=nearestDistSStoCrypt,Number=1,Type=Integer,Description="Distance of the nearest natural splice site to the mutated cryptic site">
-##INFO=<ID=posCryptWT,Number=1,Type=Integer,Description="Postion of wild-type cryptic splice site">
-##INFO=<ID=probaCryptWT,Number=1,Type=Float,Description="Score of wild-type cryptic splice site">
-##INFO=<ID=classProbaCryptWT,Number=1,Type=String,Description="Use of wild-type cryptic splice site (Yes/No)">
-##INFO=<ID=posSSPhysio,Number=1,Type=Integer,Description="Position of the natural splice site (same splice type of cryptic site)">
-##INFO=<ID=probaSSPhysio,Number=1,Type=Float,Description="Score of the natural splice site (same splice type of cryptic site)">
-##INFO=<ID=classProbaSSPhysio,Number=1,Type=String,Description="Use of the natural splice site (same splice type of cryptic site) (Yes/No)">
-##INFO=<ID=probaSSPhysioMut,Number=1,Type=Float,Description="Score of the natural splice site (same splice type of cryptic site) after the mutation">
-##INFO=<ID=classProbaSSPhysioMut,Number=1,Type=String,Description="Use of the natural splice site (same splice type of cryptic site) after the mutation (Yes/No)">
+# dynamic line modified in script : paste0("##SPiP output v",version)
+# dynamic line modified in script : paste0("##SPiPCommand=",CMD)
+## SPiP=altUsed|varID|Interpretation|InterConfident|SPiPscore|strand|gNomen|varType|ntChange|ExonInfo|exonSize|transcript|gene|NearestSS|DistSS|RegType|SPiCEproba|SPiCEinter_2thr|deltaMES|BP|mutInPBarea|deltaESRscore|posCryptMut|sstypeCryptMut|probaCryptMut|classProbaCryptMut|nearestSStoCrypt|nearestPosSStoCrypt|nearestDistSStoCrypt|posCryptWT|probaCryptWT|classProbaCryptWT|posSSPhysio|probaSSPhysio|classProbaSSPhysio|probaSSPhysioMut|classProbaSSPhysioMut
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
-chr1	15765825	NM_007272:g.15765825:G>A	G	A	.	.	Interpretation="NTR"|InterConfident="00.04 % [00.02 % ; 00.08%]"|strand="+"|varType="substitution"|ntChange="G>A"|ExonInfo="Intron 1 (1795)"|transcript="NM_007272"|gene="CTRC"|NearestSS="donor"|DistSS="825"|RegType="DeepIntron"|SPiCEproba="0"|SPiCEinter_2thr="Outside SPiCE Interpretation"|deltaMES="0"|mutInPBarea="No"|deltaESRscore="NA"|posCryptMut="15765816"|sstypeCryptMut="Acc"|probaCryptMut="0.00206159394907144"|classProbaCryptMut="No"|nearestSStoCrypt="Don"|nearestPosSStoCrypt="15765000"|nearestDistSStoCrypt="816"|posCryptWT="15765816"|probaCryptWT="0.00161527498798199"|classProbaCryptWT="No"|posSSPhysio="15766795"|probaSSPhysio="0.0775463330795674"|classProbaSSPhysio="Yes"|probaSSPhysioMut="0.0775463330795674"|classProbaSSPhysioMut="Yes"
+chr1	15765825	NM_007272:g.15765825:G>A	G	A	.	.	SPiP=A|NTR|00.04 % [00.02 % ; 00.08%]|+|substitution|G>A|Intron 1 (1795)|NM_007272|CTRC|donor|825|DeepIntron|0|Outside SPiCE Interpretation|0|No|NA|15765816|Acc|0.00206159394907144|No|Don|15765000|816|15765816|0.00161527498798199|No|15766795|0.0775463330795674|Yes|0.0775463330795674|Yes
 ```
 
-**--header**
-
-+ Add the meta-column information to the file, to explain the significance of each SPiP column (only in text format output)
-
-```shell
-    ##ALT=<ID=*,Description=\"Represents allele(s) other than observed.\">
-    ##INFO=<ID=Interpretation,Number=1,Type=String,Description=\"Overall prediction of SPiP\">
-    ##INFO=<ID=InterConfident,Number=1,Type=String,Description=\"Probability of splicing alteration with CI_95%, estimated from mutations 53,048 mutations\">
-    ##INFO=<ID=strand,Number=1,Type=String,Description=\"Strand of the transcripts\">
-    ##INFO=<ID=varType,Number=1,Type=String,Description=\"Type of variant\">
-    ##INFO=<ID=ntChange,Number=1,Type=String,Description=\"Nucleotides variation\">
-    ##INFO=<ID=ExonInfo,Number=1,Type=String,Description=\"Number and size of Exon/Intron\">
-    ##INFO=<ID=transcript,Number=1,Type=String,Description=\"Transcript (RefSeq)\">
-    ##INFO=<ID=gene,Number=1,Type=String,Description=\"Gene symbol (RefSeq)\">
-    ##INFO=<ID=NearestSS,Number=1,Type=String,Description=\"Nearest splice site to the mutation\">
-    ##INFO=<ID=distSS,Number=1,Type=String,Description=\"Distance between the splice site and the mutation\">
-    ##INFO=<ID=RegType,Number=1,Type=String,Description=\"Type of region in the transcript, Exon/Intron\">
-    ##INFO=<ID=SPiCEproba,Number=1,Type=Float,Description=\"SPiCE score\">
-    ##INFO=<ID=SPiCEinter_2thr,Number=1,Type=String,Description=\"Classes of SPiCE (low, medium, high)\">
-    ##INFO=<ID=deltaMES,Number=1,Type=Float,Description=\"Delta score of MES\">
-    ##INFO=<ID=mutInPBarea,Number=1,Type=String,Description=\"Mutation in branch point\">
-    ##INFO=<ID=deltaESRscore,Number=1,Type=Float,Description=\"Score of deltaESRscore\">
-    ##INFO=<ID=posCryptMut,Number=1,Type=Integer,Description=\"Postion of mutated cryptic splice site\">
-    ##INFO=<ID=sstypeCryptMut,Number=1,Type=String,Description=\"Splice type of mutated cryptic splice site\">
-    ##INFO=<ID=probaCryptMut,Number=1,Type=Float,Description=\"Score of mutated cryptic splice site\">
-    ##INFO=<ID=classProbaCryptMut,Number=1,Type=String,Description=\"Use of mutated cryptic splice site (Yes/No)\">
-    ##INFO=<ID=nearestSStoCrypt,Number=1,Type=String,Description=\"Splice type of the nearest natural splice site to the mutated cryptic site\">
-    ##INFO=<ID=nearestPosSStoCrypt,Number=1,Type=Integer,Description=\"Position of the nearest natural splice site to the mutated cryptic site\">
-    ##INFO=<ID=nearestDistSStoCrypt,Number=1,Type=Integer,Description=\"Distance of the nearest natural splice site to the mutated cryptic site\">
-    ##INFO=<ID=posCryptWT,Number=1,Type=Integer,Description=\"Postion of wild-type cryptic splice site\">
-    ##INFO=<ID=probaCryptWT,Number=1,Type=Float,Description=\"Score of wild-type cryptic splice site\">
-    ##INFO=<ID=classProbaCryptWT,Number=1,Type=String,Description=\"Use of wild-type cryptic splice site (Yes/No)\">
-    ##INFO=<ID=posSSPhysio,Number=1,Type=Integer,Description=\"Position of the natural splice site (same splice type of cryptic site)\">
-    ##INFO=<ID=probaSSPhysio,Number=1,Type=Float,Description=\"Score of the natural splice site (same splice type of cryptic site)\">
-    ##INFO=<ID=classProbaSSPhysio,Number=1,Type=String,Description=\"Use of the natural splice site (same splice type of cryptic site) (Yes/No)\">
-    ##INFO=<ID=probaSSPhysioMut,Number=1,Type=Float,Description=\"Score of the natural splice site (same splice type of cryptic site) after the mutation\">
-    ##INFO=<ID=classProbaSSPhysioMut,Number=1,Type=String,Description=\"Use of the natural splice site (same splice type of cryptic site) after the mutation (Yes/No)\">
-```
 ## Authors <a id="6"></a>
 
 
 * Raphael Leman - [raphaelleman](https://github.com/raphaelleman/ "tittle")
     * You can contact me at: r.leman@baclesse.unicancer.fr or raphael.leman@orange.fr
 
-> **Cite as:** SPiP: a Splicing Prediction Pipeline addressing the diversity of splice alterations validated on a diagnostic set of 3,048 exonic and intronic variants.
-**Raphaël Leman**, Béatrice Parfait, Dominique Vidaud, Emmanuelle Girodon, Laurence Pacot, Gérald Legac, Chandran Ka, Claude Ferec, Yann Fichou, Céline Quesnelle, Etienne Muller, Dominique Vaur, Laurent Castera, Agathe Ricou, Hélène Tubeuf, Omar Soukarieh, Pascaline Gaildrat, Florence Riant, Marine Guillaud-Bataille, Sandrine M. Caputo, Virginie Caux-Moncoutier, Nadia Boutry-Kryza, Françoise Bonnet-Dorion, Ines Schultz, Maria Rossing, Michael T. Parsons, Amanda B. Spurdle, Thierry Frebourg, Alexandra Martins, Claude Houdayer, Sophie Krieger, [in preparation](https://www.researchgate.net/publication/339817193_SPiP_a_Splicing_Prediction_Pipeline_addressing_the_diversity_of_splice_alterations_validated_on_a_diagnostic_set_of_3048_exonic_and_intronic_variants "tittle")
+> **Cite as:** SPiP, a comprehensive Splicing Prediction Pipeline for massive detection of exonic and intronic variant effect on mRNA splicing.
+**Raphaël Leman**, Béatrice Parfait, Dominique Vidaud, Emmanuelle Girodon, Laurence Pacot, Gérald Le Gac, Chandran Ka, Claude Ferec, Yann Fichou, Céline Quesnelle, MEtienne Muller, Dominique Vaur, Laurent Castera, Agathe Ricou, Hélène Tubeuf, Omar Soukarieh, Pascaline Gaildrat, Florence Riant, Marine Guillaud-Bataille, Sandrine M. Caputo, Virginie Caux-Moncoutier, Nadia Boutry-Kryza, Françoise Bonnet-Dorion, Ines Schultz, Maria Rossing, Louis Goldenberg, Olivier Quenez, Valentin Harter, Michael T. Parsons, Amanda B. Spurdle, Thierry Frébourg, Alexandra Martins, Claude Houdayer, Sophie Krieger, [in preparation](https://www.researchgate.net/publication/339817193_SPiP_a_Splicing_Prediction_Pipeline_addressing_the_diversity_of_splice_alterations_validated_on_a_diagnostic_set_of_3048_exonic_and_intronic_variants "tittle")
 
 ## License <a id="7"></a>
 
