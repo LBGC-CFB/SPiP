@@ -28,7 +28,7 @@ setTranscript <- function (transcriptsDF) {
 }
 
 getTranscript2varID <- function(varID){
-    tmp = unlist(strsplit(varID,":",fixed = T))
+    tmp = unlist(strsplit(as.character(varID),":",fixed = T))
     tr = tmp[1]
     if(length(grep(".",tr ))>0){
         tr = unlist(strsplit(tr,".",fixed = T))[1]
@@ -866,7 +866,7 @@ getVariantInfo <- function(varID){
 		if(length(grep(".",transcript ))>0){
 			transcript = unlist(strsplit(transcript,".",fixed = T))[1]
 		}
-        if(length(varDecomp)==2 & varDecomp[1] != 'no transcript'){
+        if(length(varDecomp)==2 & varDecomp[1] != 'no transcript' & varDecomp[1] != 'no sequence'){
 			getMutInfo(varDecomp[2])
 		}else{
 			varPos = as.character(varDecomp[2])
@@ -1207,8 +1207,8 @@ getAnnotation <- function(seqPhysio, seqMutated){
 getOutputToSPiPmodel <- function(varID,i,seqPhysio = "", seqMutated = ""){
     if(printProcess){setTxtProgressBar(pb2, i)}
     if(as.numeric(regexpr('no transcript',varID))>0|
-        as.numeric(regexpr('mutUnknown',varID))>0)
-    {
+        as.numeric(regexpr('mutUnknown',varID))>0|
+        as.numeric(regexpr('no sequence',varID))>0)    {
         tmp <- rep("NA",35)
         return(tmp)
     }else{
@@ -1504,74 +1504,79 @@ readVCF <- function(txtLine,i){
 		transcript <- transcriptLines[,'V4']
         strandTrans <- transcriptLines[,'V6']
 
-		totalSequence <- getSequencePhysio(genome, '+', chrom, max(1,pos - 150 - bonus), pos+150+bonus)
-		seqStart <- max(1,pos-150-bonus)
-		seqLength <- nchar(totalSequence)
-		if (ref == "-") {
-			posIndex <- c(pos-seqStart+1,pos-seqStart) # special case for comment below : ref == - => last = first-1
-		} else {
-			posIndex <- c(pos-seqStart+1,pos-seqStart+nchar(ref)) # posIndex[1] : first index of ref / posIndex[2] : last index of ref
-		}
-
-		# computed once for all '+' transcripts
-		seqPhysio <- substr(totalSequence, posIndex[1]-150, posIndex[1]+150)
-		seqMutated1 <- substr(totalSequence, posIndex[1]-150, posIndex[1]-1)
-		seqMutated2 <- substr(totalSequence, posIndex[2]+1, posIndex[2]+150)
-
-		# computed once for all '-' transcripts
-		revSeqPhysio <- getRevSeq(substr(totalSequence, posIndex[2]-150, posIndex[2]+150))
-		revSeqMutated1 <- getRevSeq(substr(totalSequence, posIndex[2]+1, posIndex[2]+150))
-		revSeqMutated2 <- getRevSeq(substr(totalSequence, posIndex[1]-150, posIndex[1]-1))
-		revRef <- getRevSeq(ref)
-
         if(length(transcript)==0){
-            resultMatrix <- c(paste("no transcript",pos,sep=":"),"","","","")
-			for (k in 1:lengthDataLine) {
-				resultMatrix <- c(resultMatrix,dataLine[k])
-			}
+            resultMatrix <- matrix(c(paste("no transcript",pos,sep=":"),"","","","",dataLine),ncol = 5+lengthDataLine)
+#			for (k in 1:lengthDataLine) {
+#				resultMatrix <- c(resultMatrix,dataLine[k])
+#			}
         }else{
-            altSplit = unlist(strsplit(alt,',',fixed = TRUE))
-			nbAlt <- length(altSplit)
+            totalSequence <- getSequencePhysio(genome, '+', chrom, max(1,pos - 150 - bonus), pos+150+bonus)
+            if( length(strsplit(totalSequence,"|"))>0){
+                seqStart <- max(1,pos-150-bonus)
+                seqLength <- nchar(totalSequence)
+                if (ref == "-") {
+                    posIndex <- c(pos-seqStart+1,pos-seqStart) # special case for comment below : ref == - => last = first-1
+                } else {
+                    posIndex <- c(pos-seqStart+1,pos-seqStart+nchar(ref)) # posIndex[1] : first index of ref / posIndex[2] : last index of ref
+                }
 
-			resultMatrix <- matrix(rep("",length(transcript)*nbAlt*(5+lengthDataLine)), ncol = 5+lengthDataLine)
-			# matrix dedicated to the storage of [varID, seqPhysio, seqMutated, transcript, altUsed, +infosOfInput] for each variant
+                # computed once for all '+' transcripts
+                seqPhysio <- substr(totalSequence, posIndex[1]-150, posIndex[1]+150)
+                seqMutated1 <- substr(totalSequence, posIndex[1]-150, posIndex[1]-1)
+                seqMutated2 <- substr(totalSequence, posIndex[2]+1, posIndex[2]+150)
 
-			for (i in 1:length(transcript)) {
-                if(strandTrans[i] =="+"){
-					for(j in 1:nbAlt){
-						resultMatrix[(i-1)*nbAlt + j,2] <- seqPhysio
-						resultMatrix[(i-1)*nbAlt + j,4] <- as.character(transcript[i])
-						resultMatrix[(i-1)*nbAlt + j,5] <- altSplit[j]
-						for (k in 1:lengthDataLine) {
-							resultMatrix[(i-1)*nbAlt + j,5+k] <- dataLine[k]
-						}
-                        if(nchar(ref)==1 & nchar(altSplit[j])==1){
-                            resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos,':',ref,'>',altSplit[j],sep="")
-							resultMatrix[(i-1)*nbAlt + j,3] <- paste(seqMutated1,altSplit[j],seqMutated2,sep="")
-                        }else{ # all other variants than subsitution are considered as delins
-                            resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos,"_",pos+nchar(ref)-1,':delins',altSplit[j],sep="")
-							resultMatrix[(i-1)*nbAlt + j,3] <- substr(paste(seqMutated1,altSplit[j],seqMutated2,sep=""),1,301)
+                # computed once for all '-' transcripts
+                revSeqPhysio <- getRevSeq(substr(totalSequence, posIndex[2]-150, posIndex[2]+150))
+                revSeqMutated1 <- getRevSeq(substr(totalSequence, posIndex[2]+1, posIndex[2]+150))
+                revSeqMutated2 <- getRevSeq(substr(totalSequence, posIndex[1]-150, posIndex[1]-1))
+                revRef <- getRevSeq(ref)
+
+                altSplit = unlist(strsplit(alt,',',fixed = TRUE))
+                nbAlt <- length(altSplit)
+
+                resultMatrix <- matrix(rep("",length(transcript)*nbAlt*(5+lengthDataLine)), ncol = 5+lengthDataLine)
+                # matrix dedicated to the storage of [varID, seqPhysio, seqMutated, transcript, altUsed, +infosOfInput] for each variant
+
+                for (i in 1:length(transcript)) {
+                    if(strandTrans[i] =="+"){
+                        for(j in 1:nbAlt){
+                            resultMatrix[(i-1)*nbAlt + j,2] <- seqPhysio
+                            resultMatrix[(i-1)*nbAlt + j,4] <- as.character(transcript[i])
+                            resultMatrix[(i-1)*nbAlt + j,5] <- altSplit[j]
+                            for (k in 1:lengthDataLine) {
+                                resultMatrix[(i-1)*nbAlt + j,5+k] <- dataLine[k]
+                            }
+                            if(nchar(ref)==1 & nchar(altSplit[j])==1){
+                                resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos,':',ref,'>',altSplit[j],sep="")
+                                resultMatrix[(i-1)*nbAlt + j,3] <- paste(seqMutated1,altSplit[j],seqMutated2,sep="")
+                            }else{ # all other variants than subsitution are considered as delins
+                                resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos,"_",pos+nchar(ref)-1,':delins',altSplit[j],sep="")
+                                resultMatrix[(i-1)*nbAlt + j,3] <- substr(paste(seqMutated1,altSplit[j],seqMutated2,sep=""),1,301)
+                            }
+                        }
+                    } else if (strandTrans[i]=="-"){
+                        for(j in 1:nbAlt){
+                            altRev = getRevSeq(altSplit[j])
+                            resultMatrix[(i-1)*nbAlt + j,2] <- revSeqPhysio
+                            resultMatrix[(i-1)*nbAlt + j,4] <- as.character(transcript[i])
+                            resultMatrix[(i-1)*nbAlt + j,5] <- altSplit[j] # not reverse-complemented
+                            for (k in 1:lengthDataLine) {
+                                resultMatrix[(i-1)*nbAlt + j,5+k] <- dataLine[k]
+                            }
+                            if(nchar(revRef)==1 & nchar(altRev)==1){
+                                resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos,':',revRef,'>',altRev,sep="")
+                                resultMatrix[(i-1)*nbAlt + j,3] <- paste(revSeqMutated1,altRev,revSeqMutated2,sep="")
+                            }else{
+                                resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos+nchar(revRef)-1,"_",pos,':delins',altRev,sep="")
+                                resultMatrix[(i-1)*nbAlt + j,3] <- substr(paste(revSeqMutated1,altRev ,revSeqMutated2,sep=""),1,301)
+                            }
                         }
                     }
-				} else if (strandTrans[i]=="-"){
-					for(j in 1:nbAlt){
-                        altRev = getRevSeq(altSplit[j])
-						resultMatrix[(i-1)*nbAlt + j,2] <- revSeqPhysio
-						resultMatrix[(i-1)*nbAlt + j,4] <- as.character(transcript[i])
-						resultMatrix[(i-1)*nbAlt + j,5] <- altSplit[j] # not reverse-complemented
-						for (k in 1:lengthDataLine) {
-							resultMatrix[(i-1)*nbAlt + j,5+k] <- dataLine[k]
-						}
-                        if(nchar(revRef)==1 & nchar(altRev)==1){
-                            resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos,':',revRef,'>',altRev,sep="")
-							resultMatrix[(i-1)*nbAlt + j,3] <- paste(revSeqMutated1,altRev,revSeqMutated2,sep="")
-                        }else{
-                            resultMatrix[(i-1)*nbAlt + j,1] <- paste(transcript[i],':g.',pos+nchar(revRef)-1,"_",pos,':delins',altRev,sep="")
-							resultMatrix[(i-1)*nbAlt + j,3] <- substr(paste(revSeqMutated1,altRev ,revSeqMutated2,sep=""),1,301)
-                        }
-                    }
-				}
-			}
+                }
+            }else{
+                resultMatrix <- matrix(c(paste("no sequence",pos,sep=":"),"","","","",dataLine),ncol = 5+lengthDataLine)
+            }
+
         }
     }
     result <<- unlist(as.list(t(resultMatrix)))

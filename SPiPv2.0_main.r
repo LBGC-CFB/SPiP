@@ -366,8 +366,7 @@ if(fileFormat=="vcf"){
         unlisted <- as.data.frame(matrix(unlist(tmpVCF), ncol = 5+lengthDataLine, byrow = TRUE))
         data <- unlisted[,c(1,2,3,5)]
         names(data) <- c("varID", "seqPhysio", "seqMutated", "altUsed")
-        transcriptsDF <- unlisted[,c(4)]
-        names(transcriptsDF) <- c("trID")
+        transcriptsDF <- data.frame(trID = unlisted[,c(4)])
         VCFinfo_DF <- unlisted[,c(6:(5+lengthDataLine))]
         VCFinfo_text <- apply(VCFinfo_DF,1,paste,collapse="\t")
 
