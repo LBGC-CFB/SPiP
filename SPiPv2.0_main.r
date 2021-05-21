@@ -359,7 +359,7 @@ if(fileFormat=="vcf"){
         if(printProcess){pb <- txtProgressBar(min = 0, max = total, initial = 1, char = "=", style = 3)}
 
         tmpVCF <-foreach (i=1:length(rawInput),.errorhandling='pass') %dopar% {
-            readVCF(rawInput[i])
+            readVCF(rawInput[i],i)
         }
 
         # merging the results of mcmapply into a dataframe
@@ -418,7 +418,7 @@ if(fileFormat=="vcf"){
             if(printVCF){
                 spipResult = mapply(mergeSPiPresult,VCFinfo_toPrint)
 
-                rawToprint = paste(VCFinfo_toPrint,spipResult,sep="\t")
+                rawToprint = paste(VCFinfo_toPrint,spipResult,sep=";")
                 writeLines(rawToprint, con = output,sep="\n")
             }else{
                 rawResult = apply(data[,c("varID", "Interpretation", "InterConfident", "SPiPscore", "strand",

@@ -1140,6 +1140,7 @@ getAnnotation <- function(seqPhysio, seqMutated){
 
 		tmpTableSeqPhy = tmpTableSeq[tmpTableSeq$Physio=="Yes"& tmpTableSeq$seqType == "WT" & tmpTableSeq$sstype==sstypCrypt,]
 		tmpTableSeqPhyMut = tmpTableSeq[tmpTableSeq$Physio=="Yes"& tmpTableSeq$seqType == "Mut" & tmpTableSeq$sstype==sstypCrypt,]
+        if(nrow(tmpTableSeqMAXMut)>1){tmpTableSeqMAXMut =tmpTableSeqMAXMut[1,]}
 
 		getNearestPosCrypt(sens, as.numeric(tmpTableSeqMAXMut$pos) ,posDon, posAcc)
 		posCryptMut <- tmpTableSeqMAXMut$pos
@@ -1506,9 +1507,6 @@ readVCF <- function(txtLine,i){
 
         if(length(transcript)==0){
             resultMatrix <- matrix(c(paste("no transcript",pos,sep=":"),"","","","",dataLine),ncol = 5+lengthDataLine)
-#			for (k in 1:lengthDataLine) {
-#				resultMatrix <- c(resultMatrix,dataLine[k])
-#			}
         }else{
             totalSequence <- getSequencePhysio(genome, '+', chrom, max(1,pos - 150 - bonus), pos+150+bonus)
             if( length(strsplit(totalSequence,"|"))>0){
