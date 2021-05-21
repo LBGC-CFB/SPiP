@@ -441,7 +441,7 @@ if(fileFormat=="vcf"){
         # read the following lines = while loop increment
         rawInput <- readLines(input, n=maxLines)
         firstLine <- firstLine + maxLines
-        for(i in ls()){eval(parse(text = paste("s = object.size(",i,")")));print(i);print(s,units = "auto")}
+        # check object size : for(i in ls()){eval(parse(text = paste("s = object.size(",i,")")));print(i);print(s,units = "auto")}
     }
 
 }else{
