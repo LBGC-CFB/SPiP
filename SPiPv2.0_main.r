@@ -377,6 +377,7 @@ if(fileFormat=="vcf"){
         if(!is.null(data)){
             # STEP 1 : deleting repetitions in the vcf storage
             colnames(VCFinfo_DF) <- columnsNames
+            VCFinfo_DF = unique(VCFinfo_DF)
             VCFinfo_toPrint <- unique(VCFinfo_text)
 
             # STEP 2 : update of the local_dataRefSeq
@@ -417,8 +418,13 @@ if(fileFormat=="vcf"){
             }
             if(printVCF){
                 spipResult = mapply(mergeSPiPresult,VCFinfo_toPrint)
-
-                rawToprint = paste(VCFinfo_toPrint,spipResult,sep=";")
+                if(length(grep(".",VCFinfo_DF$INFO))>0){
+                    VCFinfo_DF$INFO[grep(".",VCFinfo_DF$INFO)] = spipResult[grep(".",VCFinfo_DF$INFO)]
+                    VCFinfo_DF$INFO[-grep(".",VCFinfo_DF$INFO)] = paste(VCFinfo_DF$INFO[-grep(".",VCFinfo_DF$INFO)],spipResult[-grep(".",VCFinfo_DF$INFO)],sep=";")
+                }else{
+                    VCFinfo_DF$INFO = paste(VCFinfo_DF$INFO,spipResult,sep=";")
+                }
+                rawToprint = apply(VCFinfo_DF,1,paste0,collapse="\t")
                 writeLines(rawToprint, con = output,sep="\n")
             }else{
                 rawResult = apply(data[,c("varID", "Interpretation", "InterConfident", "SPiPscore", "strand",
