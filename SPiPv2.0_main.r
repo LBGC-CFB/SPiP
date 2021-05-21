@@ -377,7 +377,6 @@ if(fileFormat=="vcf"){
         if(!is.null(data)){
             # STEP 1 : deleting repetitions in the vcf storage
             colnames(VCFinfo_DF) <- columnsNames
-            VCFinfo_DF = unique(VCFinfo_DF)
             VCFinfo_toPrint <- unique(VCFinfo_text)
 
             # STEP 2 : update of the local_dataRefSeq
@@ -418,9 +417,11 @@ if(fileFormat=="vcf"){
             }
             if(printVCF){
                 spipResult = mapply(mergeSPiPresult,VCFinfo_toPrint)
-                if(length(grep(".",VCFinfo_DF$INFO))>0){
-                    VCFinfo_DF$INFO[grep(".",VCFinfo_DF$INFO)] = spipResult[grep(".",VCFinfo_DF$INFO)]
-                    VCFinfo_DF$INFO[-grep(".",VCFinfo_DF$INFO)] = paste(VCFinfo_DF$INFO[-grep(".",VCFinfo_DF$INFO)],spipResult[-grep(".",VCFinfo_DF$INFO)],sep=";")
+                VCFinfo_DF = VCFinfo_DF[!duplicated(VCFinfo_text),]
+                if(length(grep(".",VCFinfo_DF$INFO,fixed=TRUE))>0){
+                    index = grep(".",VCFinfo_DF$INFO,fixed=TRUE)
+                    VCFinfo_DF$INFO[index] = spipResult[index]
+                    VCFinfo_DF$INFO[-index] = paste(VCFinfo_DF$INFO[-index],spipResult[-index],sep=";")
                 }else{
                     VCFinfo_DF$INFO = paste(VCFinfo_DF$INFO,spipResult,sep=";")
                 }
@@ -440,6 +441,7 @@ if(fileFormat=="vcf"){
         # read the following lines = while loop increment
         rawInput <- readLines(input, n=maxLines)
         firstLine <- firstLine + maxLines
+        for(i in ls()){eval(parse(text = paste("s = object.size(",i,")")));print(i);print(s,units = "auto")}
     }
 
 }else{
