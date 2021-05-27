@@ -76,7 +76,7 @@ _________''--'-'________________
 ")
 
 # Env variables
-options(scipen=50)
+options(scipen=50, stringsAsFactors = FALSE)
 threads = 1
 genome="hg19"
 maxLines = 1000
