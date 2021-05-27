@@ -3,9 +3,40 @@ All notable changes to this project will be documented in this file.
 
 ## Unrelease
 
-## [1.1] - 2021-01-08
+## [2.0] - 2021-05-27
+- Add modifications of bioinformatic Rouen teams
+
+https://github.com/raphaelleman/SPiP/commit/9d8328fe15f4261b6684dcc69cd73beb818c2d57
+https://github.com/raphaelleman/SPiP/commit/ad1f0e134e943ada2501ee165806d8245a41c589
+https://github.com/raphaelleman/SPiP/commit/5e5bb35cc38bcc19f9b20465004781f63fbb5574
+https://github.com/raphaelleman/SPiP/commit/9139871f06549470f724ca365d7394535b41f91a
+https://github.com/raphaelleman/SPiP/commit/4162f45b0c5c6e2a5ed7db4bdcb773f36523a6f5
+https://github.com/raphaelleman/SPiP/commit/a846ce8f68ab4a475e71cc3a547f4aa34ded69f2
+https://github.com/raphaelleman/SPiP/commit/c3d2241ebb898c1eb0b163262cc0ec9a9f61991c
+https://github.com/raphaelleman/SPiP/commit/9beafafee541caa175643e8f16d400873f2c3a5b
+https://github.com/raphaelleman/SPiP/commit/ad774fe05817e4a358125f087c65944eda39716d
+https://github.com/raphaelleman/SPiP/commit/1fd5bc783facdbe8d987f4e18b37f6c6e684ab5b
+https://github.com/raphaelleman/SPiP/commit/e6b6295da8a1452120d2e7af3014ebf5ed61fea3
+https://github.com/raphaelleman/SPiP/commit/116412bb4c751d56568a3efb0b67db3b8552628e
+https://github.com/raphaelleman/SPiP/commit/1dc2f6d1719863534d8a16dfb2782805fa36fe11
+https://github.com/raphaelleman/SPiP/commit/32ba2e000d78a0346a2577d6c991d2b6ae5e0123
+
+## [2.0] - 2021-03-08
+- Add random forest algorithm
+- change VPP/VPN tables
+
+https://github.com/raphaelleman/SPiP/commit/dc0d3e81119924606e70480eb9e0671a9ecea311
+https://github.com/raphaelleman/SPiP/commit/d784b1ce58d446f41457dea9f34aaac152dd1f94
+
+## [1.1](https://github.com/raphaelleman/SPiP/blob/master/Releases/SPiPv1.1.r) - 2021-01-08
 - Use RData files instead of samtools to get sequences
 - Add two options to select gene or transcript to analyze
+- Redefine window to find potential cryptic splice sites
+
+https://github.com/raphaelleman/SPiP/commit/da471b163a802f2707829e48a171c5b5a5e2bc50<br>
+https://github.com/raphaelleman/SPiP/commit/68e74eef7d935b52b62e5d65d852515f815dbdb0<br>
+https://github.com/raphaelleman/SPiP/commit/236c22eaa8d2f803c22518a247e09bb97591e699<br>
+https://github.com/raphaelleman/SPiP/commit/17b850ec175c07ff3a3c006f0a0e7b732d9c3113<br>
 
 ## [1.0] - 2020-05-15
 - Change the size of the window to scn for cryptic/de novo creation
