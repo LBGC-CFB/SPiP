@@ -307,6 +307,7 @@ RegTypeToNumber <- data.frame(V1 = c(1:11),
 
 thToSPiPexon = 0.18
 thToSPiPintron = 0.035
+thToComplexEvent = 0.2
 
 ####################
 # READING INPUT FILE

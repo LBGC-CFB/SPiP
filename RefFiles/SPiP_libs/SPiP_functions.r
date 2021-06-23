@@ -1376,7 +1376,10 @@ SPiP <- function(data){
 							data$classProbaCryptWT[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
 							data$DistSS[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
 							data$deltaESRscore[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0]))
-	data$InterConfident = unlist(mapply(getPredConfident, data$RegType, data$DistSS, data$SPiPscore))
+
+    data$Interpretation[data$SPiPscore<thToComplexEvent & data$Interpretation=="Alter by complex event"] = "NTR"
+
+    data$InterConfident = unlist(mapply(getPredConfident, data$RegType, data$DistSS, data$SPiPscore))
     oldNames = names(data)[-which(names(data)%in%c("varID", "Interpretation", "InterConfident", "SPiPscore", "chr", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
     "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "BP", "mutInPBarea", "deltaESRscore",
     "posCryptMut", "sstypeCryptMut", "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT",
