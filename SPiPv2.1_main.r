@@ -85,7 +85,7 @@ printProcess = FALSE
 pathToGene = NULL
 pathToTranscript = NULL
 pathToTranscriptome = NULL
-version = "2.0"
+version = "2.1"
 
 #SPiP arguments
 helpMessage=paste0("Usage: SPiPv",version,".r\n
