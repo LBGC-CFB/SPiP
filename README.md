@@ -21,7 +21,7 @@ SPiP is available for Windows OS at https://sourceforge.net/projects/splicing-pr
 
 ---
 
-* SPiPv2.0_main.r: the SPiP script
+* SPiPv2.1_main.r: the SPiP script
 * testCrypt.txt: an example of input data in text format
 * testVar.vcf: an example of input data in vcf format
 * *RefFiles*: folder where are the reference files used by SPiP
@@ -57,13 +57,13 @@ NB: commands to regenerate these files are available in [getGenomeSequenceFromBS
 
 ---
 
-you can get the different argument of SPiP by `Rscript /path/to/SPiPv2.0_main.r --help`
+you can get the different argument of SPiP by `Rscript /path/to/SPiPv2.1_main.r --help`
 
 An example of SPiP run with test file [testCrypt.txt](http://gitlab.baclesse.fr/LEMRAP/spip/blob/master/testCrypt.txt "tittle"):
 
 ```shell
 cd /path/to/SPiP/
-Rscript ./SPiPv2.0_main.r -I ./testCrypt.txt -O ./outputTest.txt
+Rscript ./SPiPv2.1_main.r -I ./testCrypt.txt -O ./outputTest.txt
 ```
 
 In this example SPiP will generate a text file "outputTest.txt" where the predictions will be save. The scheme of this output is:
