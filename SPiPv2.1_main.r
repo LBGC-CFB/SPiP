@@ -34,7 +34,7 @@ library(parallel)
 	error=function(cond) {
 		message("Here's the original error message:")
 		message(cond)
-		message("*****You need to install \'parallel\' library\nInstall it by: install.pakages(\'parallel\')")
+		message("*****You need to install \'parallel\' library\nInstall it by: install.packages(\'parallel\')")
 })
 tryCatch({
 library(foreach)
@@ -42,7 +42,7 @@ library(foreach)
 	error=function(cond) {
 		message("Here's the original error message:")
 		message(cond)
-		message("*****You need to install \'foreach\' library\nInstall it by: install.pakages(\'foreach\')")
+		message("*****You need to install \'foreach\' library\nInstall it by: install.packages(\'foreach\')")
 })
 tryCatch({
 library(doParallel)
@@ -50,7 +50,7 @@ library(doParallel)
 	error=function(cond) {
 		message("Here's the original error message:")
 		message(cond)
-		message("*****You need to install \'doParallel\' library\nInstall it by: install.pakages(\'doParallel\')")
+		message("*****You need to install \'doParallel\' library\nInstall it by: install.packages(\'doParallel\')")
 })
 
 tryCatch({
@@ -59,7 +59,7 @@ library(randomForest)
 	error=function(cond) {
 		message("Here's the original error message:")
 		message(cond)
-		message("*****You need to install \'randomForest\' library\nInstall it by: install.pakages(\'randomForest\')")
+		message("*****You need to install \'randomForest\' library\nInstall it by: install.packages(\'randomForest\')")
 })
 
 cat("
@@ -419,8 +419,8 @@ if(fileFormat=="vcf"){
             if(printVCF){
                 spipResult = mapply(mergeSPiPresult,VCFinfo_toPrint)
                 VCFinfo_DF = VCFinfo_DF[!duplicated(VCFinfo_text),]
-                if(length(grep(".",VCFinfo_DF$INFO,fixed=TRUE))>0){
-                    index = grep(".",VCFinfo_DF$INFO,fixed=TRUE)
+                if(length(which(VCFinfo_DF$INFO=="."))>0){
+                    index = which(VCFinfo_DF$INFO==".")
                     VCFinfo_DF$INFO[index] = spipResult[index]
                     VCFinfo_DF$INFO[-index] = paste(VCFinfo_DF$INFO[-index],spipResult[-index],sep=";")
                 }else{
