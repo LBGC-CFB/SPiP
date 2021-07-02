@@ -1305,8 +1305,9 @@ getVPN <- function(distSS,RegType){
 	return(probaInter)
 }
 
-getPredConfident <- function(RegType, distSS, SPiPscore){
-    #proba from SNP + UV analysis (N = 99,616)
+
+getPredConfident <- function(RegType, distSS, SPiPscore, interpretation){
+	#proba from SNP + UV analysis (N = 99,616)
 	probaInter = -1
     if(SPiPscore>thToSPiPintron & length(grep("Intron",RegType))>0){
 		probaInter = getVPP(SPiPscore)
@@ -1320,6 +1321,17 @@ getPredConfident <- function(RegType, distSS, SPiPscore){
 			probaInter = NA
 		})
     }
+    if(!is.na(interpretation)){
+        if(SPiPscore<thToComplexEvent & interpretation=="Alter by complex event"){
+            tryCatch({
+                probaInter = getVPN(distSS[1],RegType)
+            },
+            error=function(cond) {
+                probaInter = NA
+            })
+        }
+    }else{probaInter = NA}
+
 	return (probaInter)
 }
 
@@ -1376,10 +1388,9 @@ SPiP <- function(data){
 							data$classProbaCryptWT[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
 							data$DistSS[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0],
 							data$deltaESRscore[data$SPiPscore>thToSPiPexon & as.numeric(regexpr("Exon",data$RegType))>0]))
-
+    data$InterConfident = unlist(mapply(getPredConfident, data$RegType, data$DistSS, data$SPiPscore, data$Interpretation))
     data$Interpretation[data$SPiPscore<thToComplexEvent & data$Interpretation=="Alter by complex event"] = "NTR"
 
-    data$InterConfident = unlist(mapply(getPredConfident, data$RegType, data$DistSS, data$SPiPscore))
     oldNames = names(data)[-which(names(data)%in%c("varID", "Interpretation", "InterConfident", "SPiPscore", "chr", "strand", "gNomen", "varType", "ntChange", "ExonInfo", "exonSize", "transcript",
     "gene", "NearestSS", "DistSS", "RegType", "seqPhysio", "seqMutated", "SPiCEproba", "SPiCEinter_2thr", "deltaMES", "BP", "mutInPBarea", "deltaESRscore",
     "posCryptMut", "sstypeCryptMut", "probaCryptMut", "classProbaCryptMut", "nearestSStoCrypt", "nearestPosSStoCrypt", "nearestDistSStoCrypt", "posCryptWT",
