@@ -1346,6 +1346,7 @@ SPiP <- function(data){
     data$probaCryptWT = as.numeric(as.character(data$probaCryptWT))
     data$deltaESRscore = as.numeric(as.character(data$deltaESRscore))
     data$SPiCEproba = as.numeric(as.character(data$SPiCEproba))
+    data$probaSSPhysioMut = as.numeric(data$probaSSPhysioMut)
 
     data$RegTypeNum = unlist(lapply(list(data$RegType),function(x) RegTypeToNumber[x,1]))
 	data$probaSSPhysioMut[is.na(data$probaSSPhysioMut)] = 0
