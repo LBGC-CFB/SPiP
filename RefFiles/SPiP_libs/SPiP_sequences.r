@@ -11,15 +11,19 @@ getSequencePhysio <- function(genome,sens=NULL,chr,start,end){
         idx = which(transcriptome_idx$chr==chr & transcriptome_idx$strand==sens & transcriptome_idx$seqStart<=start & transcriptome_idx$seqEnd>=end)
     }
 	if(length(idx)>1){idx = idx[1]}
-	start2 = start;end2 = end
-	seqStart = transcriptome_idx$seqStart[idx]-1
-    if(transcriptome_idx$strand[idx]=="-"){
-	    start2=end;end2=start
-	    seqStart = transcriptome_idx$seqEnd[idx]+1
+    if(length(idx)>0){
+        start2 = start;end2 = end
+        seqStart = transcriptome_idx$seqStart[idx]-1
+        if(transcriptome_idx$strand[idx]=="-"){
+            start2=end;end2=start
+            seqStart = transcriptome_idx$seqEnd[idx]+1
+        }
+        transcript_sequence <- transcriptome_seq[idx,2]
+        seqDNA = substr(transcript_sequence,abs(start2-seqStart),abs(end2-seqStart))
+        if(is.null(sens) & transcriptome_idx$strand[idx]=="-"){seqDNA = getRevSeq(seqDNA)} # by default all sequence should be forward strand
+    }else{
+        seqDNA=""
     }
-	transcript_sequence <- transcriptome_seq[idx,2]
-	seqDNA = substr(transcript_sequence,abs(start2-seqStart),abs(end2-seqStart))
-    if(is.null(sens) & transcriptome_idx$strand[idx]=="-"){seqDNA = getRevSeq(seqDNA)} # by default all sequence should be forward strand
 	return(seqDNA)
 }
 

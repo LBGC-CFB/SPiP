@@ -1524,7 +1524,7 @@ readVCF <- function(txtLine,i){
             resultMatrix <- matrix(c(paste("no transcript",pos,sep=":"),"","","","",dataLine),ncol = 5+lengthDataLine)
         }else{
             totalSequence <- getSequencePhysio(genome, NULL, chrom, max(1,pos - 150 - bonus), pos+150+bonus)
-            if( length(strsplit(totalSequence,"|"))>0){
+            if( length(unlist(strsplit(totalSequence,"|")))>0){
                 seqStart <- max(1,pos-150-bonus)
                 seqLength <- nchar(totalSequence)
                 if (ref == "-") {
