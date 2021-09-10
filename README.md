@@ -59,7 +59,7 @@ NB: commands to regenerate these files are available in [getGenomeSequenceFromBS
 
 you can get the different argument of SPiP by `Rscript /path/to/SPiPv2.1_main.r --help`
 
-An example of SPiP run with test file [testCrypt.txt](http://gitlab.baclesse.fr/LEMRAP/spip/blob/master/testCrypt.txt "tittle"):
+An example of SPiP run with test file [testCrypt.txt](https://github.com/raphaelleman/SPiP/blob/master/testCrypt.txt "tittle"):
 
 ```shell
 cd /path/to/SPiP/
