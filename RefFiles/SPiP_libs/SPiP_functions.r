@@ -1426,7 +1426,7 @@ splitRawToTable <- function(raw, sep = "\t", head = TRUE){
 
 
 mergeSPiPresult<-function(x){
-    c = paste0("SPiP=",paste0(INFO[which(VCFinfo_text%in%x)],collapse=";SPiP="))
+    c = paste0("SPiP=",paste0(INFO[which(VCFinfo_text%in%x)],collapse=";"))
     return(c)
 }
 
