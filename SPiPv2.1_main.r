@@ -219,10 +219,10 @@ if(!file.exists(paste(inputref,"/transcriptome_hg19.RData",sep="")) | !file.exis
         cat("transcriptome_hg38.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg38.RData/download\n")
         q(save="no")
     }
+}else{
+    cat("Load transcriptome sequences...\n")
+    load(paste0(inputref, "/transcriptome_",genome,".RData"))
 }
-cat("Load transcriptome sequences...\n")
-load(paste0(inputref, "/transcriptome_",genome,".RData"))
-
 cat("Load SPiP model...\n")
 load(paste0(inputref, "/model.RData"))
 
