@@ -430,7 +430,7 @@ convertcNomenIngNomen <- function(transcrit,posVar){
 			if(posVar <=min(dataConvert$cStart)){
 				gVar <<- min(dataConvert$gStart)-(abs(posVar)-abs(min(dataConvert$cStart)))
 			}else{
-				if(abs(posVar)==abs(dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar])){
+				if(posVar==dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]){
 					gVar <<- dataConvert$gEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]
 				}else{
 					gVar <<- dataConvert$gStart[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]+
@@ -443,7 +443,7 @@ convertcNomenIngNomen <- function(transcrit,posVar){
 			if(posVar >=max(dataConvert$cEnd)){
 				gVar <<- max(dataConvert$gEnd) + (posVar - max(dataConvert$cEnd))
 			}else{
-				if(abs(posVar)==abs(dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar])){
+				if(posVar==dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]){
 					gVar <<- dataConvert$gEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]
 				}else{
 					gVar <<- dataConvert$gStart[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]+
@@ -452,7 +452,7 @@ convertcNomenIngNomen <- function(transcrit,posVar){
 			}
 		}else{
 			posVar = as.numeric(posVar)
-			if(abs(posVar)==abs(dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar])){
+			if(posVar==dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]){
 				gVar <<- dataConvert$gEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]
 			}else{
 				if(dataConvert$cStart[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]<0){
@@ -533,7 +533,7 @@ convertcNomenIngNomen <- function(transcrit,posVar){
 			if(posVar <=min(dataConvert$cStart)){
 				gVar <<- max(dataConvert$gStart)+(abs(posVar)-abs(min(dataConvert$cStart)))
 			}else{
-				if(abs(posVar)==abs(dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar])){
+				if(posVar==dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]){
 					gVar <<- dataConvert$gEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]
 				}else{
 					gVar <<- dataConvert$gStart[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]-
@@ -546,7 +546,7 @@ convertcNomenIngNomen <- function(transcrit,posVar){
 			if(posVar >=min(dataConvert$cEnd)){
 				gVar <<- min(dataConvert$gEnd) - (posVar - max(dataConvert$cEnd))
 			}else{
-				if(abs(posVar)==abs(dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar])){
+				if(posVar==dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]){
 					gVar <<- dataConvert$gEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]
 				}else{
 					gVar <<- dataConvert$gStart[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]-
@@ -555,7 +555,7 @@ convertcNomenIngNomen <- function(transcrit,posVar){
 			}
 		}else{
 			posVar = as.numeric(posVar)
-			if(abs(posVar)==abs(dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar])){
+			if(posVar==dataConvert$cEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]){
 				gVar <<- dataConvert$gEnd[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]
 			}else{
 				if(dataConvert$cStart[dataConvert$cStart<=posVar & dataConvert$cEnd>=posVar]<0){
