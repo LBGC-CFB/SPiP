@@ -163,7 +163,7 @@ chr1	15765825	NM_007272:g.15765825:G>A	G	A	.	.	SPiP=A|NTR|00.04 % [00.02 % ; 00.
 * Raphael Leman - [raphaelleman](https://github.com/raphaelleman/ "tittle")
     * You can contact me at: r.leman@baclesse.unicancer.fr or raphael.leman@orange.fr
 
-> **Cite as:** Leman, R., Parfait, B., Vidaud, D.,Girodon, E., Pacot, L., Le Gac, G., Ka, C., Ferec, C., Fichou,Y., Quesnelle, C., Aucouturier, C., Muller, E., Vaur, D.,Castera, L., Boulouard, F., Ricou, A., Tubeuf,H., Soukarieh,O., Gaildrat, P., Krieger, S. (2022). SPiP: Splicing Prediction Pipeline, a machine learning tool for massive detection of exonic and intronic variant effects on mRNA splicing. [Human Mutation](https://doi.org/10.1002/humu.24491,"tittle")
+> **Cite as:** Leman, R., Parfait, B., Vidaud, D.,Girodon, E., Pacot, L., Le Gac, G., Ka, C., Ferec, C., Fichou,Y., Quesnelle, C., Aucouturier, C., Muller, E., Vaur, D.,Castera, L., Boulouard, F., Ricou, A., Tubeuf,H., Soukarieh,O., Gaildrat, P., Krieger, S. (2022). SPiP: Splicing Prediction Pipeline, a machine learning tool for massive detection of exonic and intronic variant effects on mRNA splicing. [Human Mutation](https://doi.org/10.1002/humu.24491 "tittle")
 
 ## License <a id="7"></a>
 
