@@ -163,8 +163,7 @@ chr1	15765825	NM_007272:g.15765825:G>A	G	A	.	.	SPiP=A|NTR|00.04 % [00.02 % ; 00.
 * Raphael Leman - [raphaelleman](https://github.com/raphaelleman/ "tittle")
     * You can contact me at: r.leman@baclesse.unicancer.fr or raphael.leman@orange.fr
 
-> **Cite as:** SPiP, a comprehensive Splicing Prediction Pipeline for massive detection of exonic and intronic variant effect on mRNA splicing.
-**Raphaël Leman**, Béatrice Parfait, Dominique Vidaud, Emmanuelle Girodon, Laurence Pacot, Gérald Le Gac, Chandran Ka, Claude Ferec, Yann Fichou, Céline Quesnelle, MEtienne Muller, Dominique Vaur, Laurent Castera, Agathe Ricou, Hélène Tubeuf, Omar Soukarieh, Pascaline Gaildrat, Florence Riant, Marine Guillaud-Bataille, Sandrine M. Caputo, Virginie Caux-Moncoutier, Nadia Boutry-Kryza, Françoise Bonnet-Dorion, Ines Schultz, Maria Rossing, Louis Goldenberg, Olivier Quenez, Valentin Harter, Michael T. Parsons, Amanda B. Spurdle, Thierry Frébourg, Alexandra Martins, Claude Houdayer, Sophie Krieger, [in preparation](https://www.researchgate.net/publication/339817193_SPiP_a_Splicing_Prediction_Pipeline_addressing_the_diversity_of_splice_alterations_validated_on_a_diagnostic_set_of_3048_exonic_and_intronic_variants "tittle")
+> **Cite as:** Leman, R., Parfait, B., Vidaud, D.,Girodon, E., Pacot, L., Le Gac, G., Ka, C., Ferec, C., Fichou,Y., Quesnelle, C., Aucouturier, C., Muller, E., Vaur, D.,Castera, L., Boulouard, F., Ricou, A., Tubeuf,H., Soukarieh,O., Gaildrat, P., Krieger, S. (2022). SPiP: Splicing Prediction Pipeline, a machine learning tool for massive detection of exonic and intronic variant effects on mRNA splicing. [Human Mutation](https://doi.org/10.1002/humu.24491,"tittle")
 
 ## License <a id="7"></a>
 
