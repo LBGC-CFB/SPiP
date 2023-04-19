@@ -1215,7 +1215,12 @@ getOutputToSPiPmodel <- function(varID,i,seqPhysio = "", seqMutated = ""){
     }else{
         tryCatch({
             getVariantInfo(as.character(varID))
-            tmp <- getAnnotation(seqPhysio, seqMutated)
+			if(nchar(ntChange)<106){ # remove mutation with plus 100 bp insertion
+				tmp <- getAnnotation(seqPhysio, seqMutated)
+			}else{
+				message("size mutation beyond 100 bp")
+				tmp <- rep("NA",35)
+			}
             return(tmp)
         },
         error=function(cond) {
