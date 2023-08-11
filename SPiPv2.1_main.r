@@ -85,6 +85,7 @@ printProcess = FALSE
 pathToGene = NULL
 pathToTranscript = NULL
 pathToTranscriptome = NULL
+pathToRefSeq = NULL
 version = "2.1"
 
 #SPiP arguments
@@ -101,6 +102,7 @@ helpMessage=paste0("Usage: SPiPv",version,".r\n
         --geneList /path/to/geneList.txt\t\tlist of gene to study
         --transcriptList /path/to/transcriptList.txt\t\tlist of transcript to study
         --transcriptome /path/to/transcriptome_hgXX.RData\t\tTranscriptome path if file is not in /path/to/SPiP/RefFiles/
+        --refseq /path/to/refseq_hgXX.RData\t\tRefseqpath if file is not in /path/to/SPiP/RefFiles/
         --VCF\t\tPrint output in vcf format
         --header\t\tPrint meta-header info
         --verbose\t\tShow run process
@@ -131,6 +133,8 @@ while (i <= length(args)){
         pathToTranscript=normalizePath(args[i+1]);i = i+2
     }else if(args[i]=="--transcriptome"){
         pathToTranscriptome=normalizePath(args[i+1]);i = i+2
+    }else if(args[i]=="--refseq"){
+        pathToRefSeq=normalizePath(args[i+1]);i = i+2
     }else if(args[i]=="-g"|args[i]=="--GenomeAssenbly"){
         genome=args[i+1];i = i+2
     }else if(args[i]=="-t"|args[i]=="--threads"){
@@ -149,9 +153,9 @@ while (i <= length(args)){
 }
 
 #Other argument
-if(genome!="hg19" & genome!="hg38"){
+if(genome!="hg19" & genome!="hg38" & genome != "hs1"){
 	message("###########################")
-	message("#Define the assembly genome version (hg19 or hg38)")
+	message("#Define the assembly genome version (hg19 or hg38 or hs1)")
 	message("###########################")
 	message(helpMessage)
 	stop()
@@ -167,6 +171,7 @@ CMD = paste0(normalizePath(sub("--file=","",argsFull[substr(argsFull,1,7)=="--fi
         if(!is.null(pathToGene)){paste0(" --geneList ",pathToGene)},
         if(!is.null(pathToTranscript)){paste0(" --transcriptList ",pathToTranscript)},
         if(!is.null(pathToTranscriptome)){paste0(" --transcriptome ",pathToTranscriptome)},
+        if(!is.null(pathToRefSeq)){paste0(" --refseq ",pathToRefSeq)},
         if(printVCF){" --VCF "})
 
 fileFormat = tolower(substr(basename(inputFile),nchar(basename(inputFile))-2,nchar(basename(inputFile))))
@@ -209,7 +214,7 @@ headerHelp[1] = paste0("##SPiP output v",version) # modifies the dynamic line co
 headerHelp[2] = paste0("##SPiPCommand=",CMD) # modifies the dynamic line containing the CMD
 
 cat("Check transcriptome sequences...\n")
-if(!file.exists(paste(inputref,"/transcriptome_hg19.RData",sep="")) | !file.exists(paste(inputref,"/transcriptome_hg38.RData",sep=""))){
+if(!file.exists(paste(inputref,"/transcriptome_", genome, ".RData",sep=""))){
     if(!is.null(pathToTranscriptome)){
         cat(paste("Your transcriptome file:",pathToTranscriptome))
         load(pathToTranscriptome)
@@ -217,6 +222,7 @@ if(!file.exists(paste(inputref,"/transcriptome_hg19.RData",sep="")) | !file.exis
         cat("You have to install the transcriptome file in /path/to/SPiP/RefFiles/\n")
         cat("transcriptome_hg19.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg19.RData/download\n")
         cat("transcriptome_hg38.RData available at : https://sourceforge.net/projects/splicing-prediction-pipeline/files/transcriptome/transcriptome_hg38.RData/download\n")
+        cat("transcriptome_hs1.RData must be generated\n")
         q(save="no")
     }
 }else{
@@ -233,15 +239,29 @@ cat("Load VPN table...\n")
 VPNtable = read.table(paste0(inputref, "/VPN_table.txt"),sep="\t",dec=",",header=TRUE)
 
 cat("Check RefSeq database...\n")
-if(!file.exists(paste(inputref,"/dataRefSeqhg19.RData",sep="")) & !file.exists(paste(inputref,"/dataRefSeqhg38.RData",sep=""))){
+if(!file.exists(paste(inputref,"/dataRefSeqhg19.RData",sep=""))
+   & !file.exists(paste(inputref,"/dataRefSeqhg38.RData",sep=""))
+   & !file.exists(paste(inputref,"/dataRefSeqhs1.RData",sep=""))){
+  if(!is.null(pathToRefSeq)){
+    cat(paste("Your refseq file:",pathToRefSeq))
+    load(pathToRefSeq)
+  }
+  else {
+
     currentWD = getwd()
     setwd(scriptPath)
-	cat("Create RefSeq database...\n")
-	source(paste(inputref,"/getRefSeqDatabase.r",sep=""),local =TRUE)
+    cat("Create RefSeq database...\n")
+    source(paste(inputref,"/getRefSeqDatabase.r",sep=""),local =TRUE)
     setwd(currentWD)
+  }
 }
+
 cat("Load RefSeq database...\n")
-load(paste0(inputref, "/dataRefSeq",genome,".RData"))
+if(!is.null(pathToRefSeq)) {
+  load(pathToRefSeq)
+} else {
+  load(paste0(inputref, "/dataRefSeq",genome,".RData"))
+}
 load(paste0(inputref, "/RefFiles.RData"))
 
 if(!is.null(pathToGene)){
